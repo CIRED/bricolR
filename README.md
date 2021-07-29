@@ -1,6 +1,6 @@
 # bricolR
 tutotiels d'apprentissage de R
-# séance du 18 juillet
+# séance du 27 juillet
 Quelques liens utiles:
 
 1) liste des fonctions entrant dans summarize:
