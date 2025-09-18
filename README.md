@@ -1,6 +1,10 @@
 # bricolR
-tutotiels d'apprentissage de R
-# séance du 27 juillet
+Le séminaire R de la Cité du Développement Durable. 
+Ce séminaire est ouvert et de tous niveaux. On peut y présenter ses travaux en cours, résoudre des problèmes de code, présenter un paquetage qu'on l'on a trouvé utile et surtout partager des idées autour du langage R.
+Ce répertoire met à disposition des personnes intéressées les scripts, markdown, quarto et données utilisées lors du séminaire.
+
+## séance du 27 juillet 2021
+tutoriels d'apprentissage de R. 
 Quelques liens utiles:
 
 1) liste des fonctions entrant dans summarize:
