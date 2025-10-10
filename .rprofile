@@ -1,0 +1,69 @@
+print ("Bonjour")
+
+# library (FactoMineR)
+# library (car)
+# library (doBy)
+library (openxlsx)
+library(rstatix)
+# library (Factoshiny)
+
+#######################################################
+# la fonction coller permet de faire une importation par 
+coller = function () 
+{ 
+   read.table("clipboard", header=TRUE, sep="\t", dec = ",") 
+}
+#######################################################
+# permet d'importer de l'Excel
+ie = function ()
+{
+  read.xlsx( file.choose() ) 
+}
+
+#######################################################
+# Extraction des colonnes numériques d'un dataframe
+DfNum = function(DataFrameEntree)
+{   
+   DataFrameSortie = DataFrameEntree [ sapply ( X = DataFrameEntree, is.numeric ) == TRUE]   
+   return(DataFrameSortie) 
+}
+
+############################################################################################
+# Fonction qui effectue le test du Khi Deux des combinaisons des variables d'un dataframe
+FKhiDeux = function (DataFrameEntree)
+{
+   # Récupère le nom du DataFrame passé en entrée
+   NomDataFrame      = deparse(substitute(DataFrameEntree))
+   
+   # Récupère les noms des colonnes du dataframe
+   DataFrameEntree   = DfTexte(DataFrameEntree)
+   NomVariables      = names (DataFrameEntree)
+   
+   # Crée un dataframe avec 2 colonnes contenant toutes ls combinaisons croisées des Noms des variables
+   DataFrameSortie   = as.data.frame(t(combn(x=NomVariables, m = 2)))
+   
+   i = 1
+   while (i<=nrow(DataFrameSortie))
+   {
+      # Récupération de la p-value
+      PValueLocale =
+         chisq.test(
+            DataFrameEntree [,DataFrameSortie [i,1]], 
+            DataFrameEntree [,DataFrameSortie [i,2]]
+         )$p.value
+      
+      # Stockage de la p-value du test du Khi ²
+      DataFrameSortie$PValueKhiDeux [i] = PValueLocale
+      i = i + 1
+   }
+   
+   # Ajout de la colonne SIGnificatif ou pas (avec un alpha de 0.05)
+   
+   DataFrameSortie$Sig = ifelse(DataFrameSortie$PValueKhiDeux<0.05, "SIG", "NON SIG")
+   
+   # Retour du dataframe de synthèse
+   return (DataFrameSortie)  
+}
+#####################################################################################
+
+print ("A Bientôt!!")
