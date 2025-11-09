@@ -1,0 +1,537 @@
+---
+title: "Bricole'R 2025.6 tests sous R"
+author: "Francky"
+html_document:
+    code_folding: hide
+    theme: readable
+    highlight: zenburn
+    toc: true
+    toc_depth: 2
+    numbered_section: true
+    fig_width: 13
+    fig_height: 8
+    fig_caption: true
+    df_print: paged
+editor: visual    
+---
+
+## Introduction
+
+Ce document quarto regroupe les tests dans R à partir de la formation des 22 au 24 septembre 2025.
+
+**Avertissement** :
+
+Les niveaux de R étaient très hétérogènes lors de cette formation qui s'est plutôt axée sur la théorie et la pratique dans divers environnements essentiellement jasp, excel et finalement R.
+
+Par contre, le supports powerpoint de la formation sont pratiquement tous en R et complètent les fichiers excel divers associés. Le support de cours est très riche : il fait presque 300 pages.
+
+## Test de Student
+
+On s'attaque ici au test de student.
+
+t-test : il existe deux protocoles :
+
+-   données indépendantes == pas les mêmes individus
+
+-   données appariées == mêmes individus appariés
+
+Deux scénarios très différents !
+
+-   En données indépendantes :==\> on s'intéresse à la **différences des moyenne**!
+
+-   En données appariées ==\> on s'intéresse on à la **moyenne des différences**
+
+**Par défaut il ne faut pas préciser en données indépendantes**.
+
+exemple dans xl sur données 2 materiaux.xlsx : fonction t.test 1 = observations pairées (appariées : erreur de traduction microsoft !).
+
+Package esquisse :
+
+[esquisse](https://dreamrs.github.io/esquisse/)
+
+Un wrapper de ggplot avec interface graphique et récupération du code pour script / quarto
+
+[glossaire ISI](https://isi-web.org/glossary/1355) paramètre de localisation == différence des moyennes !
+
+JASP calcule l'intervalle de confiance de la différence des moyennes !
+
+[site jasp](https://jasp-stats.org/thank-you-for-downloading-jasp-win64/)
+
+[extension graphpad dans R](https://csdaw.github.io/ggprism/)
+
+### test de Student simple
+
+```{r, test de student avec collage}
+Data2M <- coller() # avec coller
+str(Data2M) # il les colle en caractères !
+Data2M$INOX <- as.numeric(Data2M$INOX)
+Data2M$ALU <- as.numeric(Data2M$ALU)
+summary(Data2M)
+# test de student ALU et INOX : différence des moyennes
+t.test(Data2M$INOX, Data2M$ALU) 
+# Notez que R fait automatiquement la correction de Welsh
+t.test(Data2M$INOX, Data2M$ALU, var.equal = TRUE)
+# test T en données appariées : moyennes des différences
+t.test(Data2M$INOX, Data2M$ALU, var.equal = TRUE, paired = TRUE)
+test_t <- t.test(Data2M$INOX, Data2M$ALU, var.equal = TRUE, paired = TRUE)
+(test_t)
+class(test_t)
+str(test_t)
+attributes(test_t) <- "test machine 1"
+```
+
+Faisons le test en important les données et en testant une variété d'options.
+
+La commande t.test est très riche car elle créée une liste de résultats exploitables par la suite.
+
+```{r, test de Student avec import et options}
+Data2M <- readRDS("Data2M.rds") # importation d'un rds
+str(Data2M) # cette fois c'est du numérique
+summary(Data2M) # on a donc deux variables numériques INOX et ALU
+
+# Créons un objet t-test : 
+resist.na <- t.test(Data2M) # na pour non apparié
+(resist.na)
+str(resist.na)
+# qu'est-ce qu'il a fait ? La moyenne de l'ensemble des données !
+
+## On peut tester sur la moyenne d'une ou deux variables.
+
+## test univarié : on teste l'égalité à une valeur sur ALU
+# on peut tester l'égalité à une moyenne sur une valeur connue pour une variable
+resist.alu <- t.test(Data2M$ALU) # valeurs par défaut
+(resist.alu)
+# par défaut il teste la positivité d'une moyenne : xbar > 0
+
+# on peut tester l'égalité à une valeur de référence : tolérance, norme, population... 
+resist.alu <- t.test(Data2M$ALU,
+                    mu = 65, 
+                    alternative = "less",
+                    conf.level = 0.99)
+(resist.alu) # moyenne < 65
+
+resist.alu <- t.test(Data2M$ALU,
+                    mu = 65,
+                    alternative = "greater",
+                    conf.level = 0.99)
+(resist.alu) # moyenne > 65
+
+resist.alu <- t.test(Data2M$ALU,
+                    mu = 65,
+                    conf.level = 0.99)
+(resist.alu) # moyenne centrée sur 65
+
+
+# tests sur deux variables : moyenne INOX = ALU
+resist.na <- t.test(Data2M$INOX, Data2M$ALU)
+(resist.na)
+
+# on pourrait tester plus strictrement : 99%
+resist.na <- t.test(Data2M$INOX, Data2M$ALU, conf.level = 0.99)
+str(resist.na)
+class(resist.na)
+(resist.na)
+
+# test de moyenne INOX < ALU
+resist.na <- t.test(Data2M$INOX, Data2M$ALU,
+                    alternative = "less", conf.level = 0.99)
+(resist.na)
+
+# test de moyenne INOX > ALU
+resist.na <- t.test(Data2M$INOX, Data2M$ALU,
+                    alternative = "greater", conf.level = 0.99)
+(resist.na)
+
+
+# On peut tester inférieure à une valeur de référence : mu = 65
+resist.na <- t.test(Data2M$INOX, Data2M$ALU,
+                    mu = 65,
+                    alternative = "less",
+                    conf.level = 0.99)
+(resist.na)
+
+
+# on pourrait aussi tester de manière appariée
+resist.ap <- t.test(Data2M$INOX, Data2M$ALU, paired = TRUE) # ap : apparié
+(resist.ap)
+
+resist.ap <- t.test(Data2M$INOX, Data2M$ALU,
+                    paired = TRUE,
+                    conf.level = 0.99) # ap : apparié
+(resist.ap)
+```
+
+### Le paquetage Rstatix
+
+On peut aussi faire appel au paquetage rstatix :
+
+```{r, avec rstatix}
+library(rstatix)
+DM <- readRDS("DM.rds")
+summary(DM)
+# utiliser t_test de rstatix
+t_test(DM, Y ~ Materiau)
+DM %>% t_test(Y ~ Materiau)
+# transformons Materiau en facteur : 
+library(tidyverse)
+DM <- mutate_if(DM, is.character, as.factor) # le plus radical
+DM$Materiau  <- as.factor(DM$Materiau) # voie base R
+summary(DM)
+tests_materiaux <- t_test(DM, Y ~ Materiau)
+View(tests_materiaux)
+# les teste toutes les combinaisons de tests sur le facteur Materiau
+
+# On peut fixer les comparaisons, 
+tests_materiaux <- t_test(DM, Y ~ Materiau,
+                          comparisons = list(c("Aluminium", "Inox"),
+                                             c("Acier", "Cuivre")))
+View(tests_materiaux) 
+# On peut définir un groupe de référence : 
+tests_materiaux <- t_test(DM, Y ~ Materiau, ref.group = "Acier")
+View(tests_materiaux) # Il compare Acier aux autres métaux
+
+# corrections multiples = comme on fait des comparaisons multiples il faut corriger la pvalue
+tests_materiaux <- t_test(DM, Y ~ Materiau, p.adjust.method = "bonferroni")
+View(tests_materiaux) # avec la correction de Bonferroni == alpha / Nb tests
+
+tests_materiaux_fdr <- t_test(DM, Y ~ Materiau, p.adjust.method = "fdr")
+View(tests_materiaux_fdr) # avec la correction de Bonferroni == alpha / Nb tests
+
+tests_materiaux_fdr <- t_test(DM, Y ~ Materiau,
+                          p.adjust.method = "fdr",
+                          detailed = TRUE) # avec résultats complets 
+View(tests_materiaux)
+```
+
+Rstatix gère les configurations sans problème au contraire de t.test qui lui n'admet que des facteurs à deux modalités. Pour plus de deux modalités il faut passer en analyse de variance en base R.
+
+```{r, test t avec comparaison colonnes}
+resist <- coller()
+summary(resist)
+resist$Metal <- as.factor(resist$Metal)
+resist$Resistance <- as.numeric(resist$Resistance)
+summary(resist)
+t.test(data = resist, Resistance ~ Metal) # bien préciser les options
+# on retrouve les valeurs vues plus haut, à vous de jouer sur les options !
+```
+
+On test l'analyse de variance à un facteur
+
+```{r, anova à un facteur}
+# readRDS("DM.rds")
+# on emploie ici la méthode anova directement sur les données
+ModeleAnova1 <- aov (data = DM, Y ~ Materiau)
+ResumeAnova1 <- summary (ModeleAnova1)
+plot(ModeleAnova1, 1:6)
+summary(ModeleAnova1)
+names (ModeleAnova1) # accès aux objets de l'Anova
+(ResumeAnova1)
+ResumeAnova1 [[1]] [5] # accès à la p-value
+ModeleAnova1 $ residuals # accès aux résidus
+shapiro.test ( ModeleAnova1 $ residuals ) # Normalité des résidus
+plot(ModeleAnova1 $ residuals)
+(ModeleAnova1$fitted.values)
+(ModeleAnova1$residuals)
+plot(ModeleAnova1,1:6)
+
+TukeyHSD (ModeleAnova1) # Test de Tukey Post Hoc de base sur modèle aov
+plot(TukeyHSD(ModeleAnova1, "Materiau")) # graphe des intervalles de confiance
+print(TukeyHSD(ModeleAnova1)) # méthode print spécifique
+
+# Tests de Tukey avancé
+# Nécessite la library (multcomp) et variable facteur en Factor
+library (multcomp)
+res.lm 		= lm (data = DM, Y ~ Materiau)
+summary(res.lm)
+T.Tukey 		= glht (ModeleAnova1, linfct = mcp ( Materiau = "Tukey" ))
+summary (T.Tukey) 
+cld (T.Tukey)	# Formation des groups de modalités avec lettres (a,b,c,…)
+plot (T.Tukey) 	# Graphes des IC des differences des moyennes
+
+```
+
+Un guide conçis sur l'utilisation de aov() et anova() dans R :
+
+[guide anova](https://www.geeksforgeeks.org/r-language/when-to-use-aov-vs-anova-in-r/)
+
+[un chapitre sur l'anova](https://bookdown.org/steve_midway/DAR/understanding-anova-in-r.html)
+
+En résumé : aov() pour tester les données, anova() pour tester des modèles lm(), glm()...
+
+Le paquetage multcomp :
+
+[paquetage multcomp](https://cran.r-project.org/web/packages/multcomp/refman/multcomp.html)
+
+Comparaison multiples dans des contextes de modèles linéaires.
+
+## Le test du khi²
+
+La commande `chisq.test` attend des vecteurs sous forme de facteurs croisés dont elle compte les occurances par croisements de modalités.
+
+C'est un test d'indépendance par comptage de croisements de modalités.
+
+On peut par contre importer directement une table de contingence selon divers formats mais avec quelques remarques.
+
+#### cas 1 : tableau de données de classe table
+
+On utilise la commande `table` ou `as.table` pour créer un tableau R dont on précise les en-têtes avec la commande `dimnames`, comme dans l'aide de `chisq.test`.
+
+#### cas 2 :
+
+On importe une table de contingence en format large. Dans les options d'importation XL il faut préciser `rowNames = TRUE et colNames = TRUE.`
+
+#### cas 3 :
+
+Une liste de deux vecteurs avec les modalités répétées autant de fois au croisements. La commande va reconstruire par comptage la table de contingence à partir des modalités rencontrées des facteurs.
+
+#### cas 4 :
+
+On importe une table en format long et on la déploie avec pivot_wider ou spread ou un équivalent.
+
+```{r, test du khi 2 avec diverses données}
+### Cas 1 : tableau de données de classe table
+require(tidyverse)
+Maladies <- as.table(rbind(c(28, 9, 29, 5),
+                           c(73, 12, 25, 9),
+                           c(29, 18, 13, 5),
+                           c(50, 14, 20, 8)))
+dimnames(Maladies) <- list(
+  Maladie = c("Rougeole", "Varicelle", "Grippe", "Scarlatine"),
+  Région = c("Languedoc", "Alsace", "Auvergne", "Bretagne"))
+str(Maladies)
+(Maladies)
+class(Maladies)
+# test du khi² sur le tableau construit
+chisq.test(Maladies)
+
+# Cas 2: importation d'un fichier excel en format long 
+DataMaladies <- read.xlsx("Maladies_Régions.xlsx", "long", colNames = TRUE)
+head(DataMaladies)
+str(DataMaladies)
+summary(DataMaladies)
+class(DataMaladies)
+# mais régions et maladies sont en caractère
+DataMaladies <- mutate_if(DataMaladies, is.character, as.factor)
+summary(DataMaladies)
+chisq.test(DataMaladies$Région, DataMaladies$Maladie)
+
+# Cas 3 : importation d'un fichier excel en format large 
+DataMaladies <- read.xlsx("Maladies_Régions.xlsx",
+                          colNames = TRUE,
+                          rowNames = TRUE)
+(DataMaladies)
+str(DataMaladies)
+chisq.test(DataMaladies)
+# En fait il faut déclarer rowNames = TRUE
+
+```
+
+### complément du khi² : l'analyse factorielle des correspondances
+
+```{r, complement AFC}
+require(Factoshiny)
+require(FactoMineR)
+load("DataTitanic")
+
+table(DataTitanic$Classe, DataTitanic$Survie)
+chisq.test(DataTitanic$Classe, DataTitanic$Survie)
+DataTitanic $ Survie = 
+	as.factor (DataTitanic $ Survie)
+DataTitanic <- mutate_if(DataTitanic, is.character, as.factor)
+summary(DataTitanic)
+survie_age <- table(DataTitanic$Survie, DataTitanic$Age)
+chisq.test(survie_age)
+survie_sexe <- table(DataTitanic$Survie, DataTitanic$Sexe)
+chisq.test(survie_sexe)
+survie_embarq <- table(DataTitanic$Survie, DataTitanic$Embarq)
+chisq.test(survie_embarq)
+# realisation de l'AFC
+(survie_age)
+class(survie_age)
+mode(survie_age)
+(survie_age_df <- as.data.frame(survie_age))
+class(survie_age_df)
+class(children) # nuance : la première colonne est rownames
+# il faut donc convertir en rownames la colonne Var1 de survie_age
+
+
+survie_age_afc <- as.data.frame(survie_age)
+survie_age_afc <- pivot_wider(survie_age_afc, names_from = Var2, values_from = Freq)
+(survie_age_afc)
+rownames(survie_age_afc) <- survie_age_afc[,1] # ça ne marche plus !
+# mais comme cela ça marche : 
+survie_age_afc <- survie_age_afc %>%
+  remove_rownames %>%
+  column_to_rownames(var="Var1")
+# on ne peut plus le forcer = plus de risque de le faire accidentellement !
+afc_titanic_age <- CA(survie_age_afc)
+summary(afc_titanic_age)
+
+# Lancement du modèle
+ModeleRegLog1 = glm (data = DataTitanic, family = "binomial", Survie ~. ,   )
+library(car)
+Anova (ModeleRegLog1) # library car
+# Accès aux infos du modèle
+ModeleRegLog1 $ null.deviance
+ModeleRegLog1 $ deviance
+ModeleRegLog1 $ coefficients
+# Accès aux coefficients par la fonction tbl_regression du package gtsummary
+library ( gtsummary )
+tbl_regression ( ModeleRegLog1 )
+tbl_regression ( ModeleRegLog1, exponentiate = TRUE)
+
+# avec interactions :
+ModeleRegLog2 = glm (data = DataTitanic, family = "binomial", Survie ~ Sexe * Classe ,   )
+library(car)
+Anova (ModeleRegLog2) # library car
+# Accès aux infos du modèle
+ModeleRegLog2 $ null.deviance
+ModeleRegLog2 $ deviance
+ModeleRegLog2 $ coefficients
+# Accès aux coefficients par la fonction tbl_regression du package gtsummary
+library ( gtsummary )
+tbl_regression ( ModeleRegLog2 )
+tbl_regression ( ModeleRegLog2, exponentiate = TRUE)
+
+
+
+```
+
+Pour Quarto voir : <https://quarto.org>.
+
+## Tests avec fonctions ie()
+
+```{r, fonction ie avec choix fichier oar filechoose}
+
+ie() # fonction ouvrant une fenêtre explorateur pour choisir le fichier
+# sélectionnez le fichier Data xl Data Sante.xlsx
+
+DS <- ie()
+summary(DS)
+# testons de comparaison à une valeur de l'âge moyen à 40 ans :
+t.test(x = DS$AGE, mu = 40)
+```
+
+```{r, Mann-Whitney}
+
+# comparer deux médianes
+fg <- coller()
+# on ne peut pas faire de test t classique ! On a pas de choix !
+glimpse(fg)
+summary(fg)
+t.test(fg$F, fg$G)
+plot(fg$F,fg$G)
+shapiro.test(fg$F)
+shapiro.test(fg$G)
+
+# Test de Mann Whitney
+wilcox.test(fg$F,fg$G)
+plot(log(fg$F), log(fg$G))
+```
+
+### paquetage nortest
+
+[nortest](https://www.normalesup.org/~carpenti/Notes/Normalite/Dago-test.html)
+
+```{r}
+pt(2, 48, lower.tail = TRUE, log.p = FALSE)
+```
+
+\[distribution t dans R\](<https://stat.ethz.ch/R-manual/R-patched/library/stats/html/TDist.html>)
+
+==\> trouver la formule probabilité qu'un classement à n individus soit classés séparément sur deux variables == \> pour tests non paramétriques !
+
+### calculs de puissances avec pwrss
+
+[paquetage pwrss](https://cran.r-project.org/web/packages/pwrss/vignettes/examples.html)
+
+```{r, puissance}
+library(pwrss)
+model <- lm(mpg ~ hp + wt, data = mtcars)
+summary(model)
+power.t.test(ncp = -3.519, # t-value for hp variable
+             df = 29, # residual degrees of freedom
+             alpha = 0.05, # type 1 error rate
+             alternative = "two.sided",
+             plot = TRUE)
+
+apropos("power")
+stats::power.t.test(n = 15, delta = 10, sd = 15.0, sig.level = 0.05)
+
+# revenons à notre test initial : 
+t.test(Data2M$INOX, Data2M$ALU)
+power.t.test(ncp = -3.0451, # t-value for hp variable
+             df = 20, # residual degrees of freedom
+             alpha = 0.05, # type 1 error rate
+             alternative = "two.sided",
+             plot = TRUE)
+
+# on peut rajouter les autres cas envisagés : 
+t.test(Data2M$INOX, Data2M$ALU, var.equal = TRUE)
+power.t.test(ncp = -3.0451, # t-value for hp variable
+             df = 26, # residual degrees of freedom
+             alpha = 0.05, # type 1 error rate
+             alternative = "two.sided",
+             plot = TRUE)
+# test T en données appariées : moyennes des différences
+t.test(Data2M$INOX, Data2M$ALU, var.equal = TRUE, paired = TRUE)
+power.t.test(ncp = -3.5129, # t-value for variable
+             df = 13, # residual degrees of freedom
+             alpha = 0.05, # type 1 error rate
+             alternative = "two.sided",
+             plot = TRUE) 
+## notez que le paramètre type = est refusé par la fonction...
+
+```
+
+**Attention avec power.t.test() de stats !** Il est masqué par pwrss !
+
+## Utilisation de GPower
+
+**Tres très utile pour vérifier la théorie et évaluer les puissances très vite**
+
+## Test de Fischer sur régression
+
+```{r, test de Fischer sur régression linéaire}
+temperature <- ie()
+summary(temperature)
+# on explique la température par le temps ! 
+mod_1 <- lm(Temp.Moyenne ~ Année, data = temperature)
+summary(mod_1)
+power.f.test(ncp = 1, df1 = 1, df2 = 74, alpha = 0.05)
+power.f.test(ncp = 63, df1 = 1, df2 = 74, alpha = 0.05)
+## essayons de voir sur l'anomalie de température :
+norm_temp <- mean(temperature$Temp.Moyenne[46:76])
+temperature <- mutate(temperature, anomalie = Temp.Moyenne - norm_temp)
+summary(temperature)
+smooth <- loess(temperature$anomalie ~ temperature$Année)
+plot(temperature$Année, temperature$anomalie)
+lines(predict(smooth), col = 'red', lwd = 2)
+require(tidyverse)
+ggplot(temperature,
+  aes(temperature$Année, temperature$anomalie)) +
+  geom_point() + 
+  geom_smooth()
+```
+
+## tests sur proportions
+
+comparaison d'une proportion à une valeur donnée :
+
+```{r, test sur proportion}
+binom.test(n = 150, x = 100, p = 0.50)
+binom.test(n = 150, x = 85, p = 0.50)
+binom.test(n = 150, x = 95, p = 0.50) ### sondage présidentielles binom.test(n = 30000, x = 14700, p = 0.50)
+power.binom.test(size =  150, 0.5, alpha = 0.05, null.prob = 0.5, alternative = "two.sided")
+```
+
+### comparaison de deux proportions :
+
+```{r, comparaison de deux proportions}
+prop.test(c(60,24), c(200,160))
+power.z.twoprops(prob1 = 0.30, prob2 = 0.15,
+                 power = 0.90, arcsine = TRUE)
+probs.to.h(prob1 = 0.30, prob2 = 0.15)
+```
+
+<https://cran.r-project.org/web/packages/pwrss/vignettes/examples.html#3_Proportions_(Z-Test)>
