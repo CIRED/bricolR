@@ -1,0 +1,13 @@
+name: OnlineApp
+title: myApp
+username:
+account: flore
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 217701
+bundleId: 1022193
+url: https://flore.shinyapps.io/OnlineApp/
+when: 1507756241.47298
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data/.DS_Store

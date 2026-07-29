@@ -1,0 +1,12 @@
+name: onlineapp2
+title: OnlineApp
+username:
+account: flore
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 216486
+bundleId: 988025
+url: https://flore.shinyapps.io/onlineapp2/
+when: 1505837772.98579
+asMultiple: FALSE
+asStatic: FALSE
