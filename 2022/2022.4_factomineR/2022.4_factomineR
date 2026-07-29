@@ -1,0 +1,40 @@
+################################################################################
+#########  """"script bricole'R 2022.4 factomineR  du 25 juillet 2022  #########
+################################################################################
+
+### chargement des paquetages 
+library(FactoMineR)
+### chargement des librairies 
+library(tidyverse)
+library(magrittr) # paquetage n?cessaire pour utiliser le tuyau ou pipe de programmation
+library(RColorBrewer)
+theme_set(theme_bw())
+library(ggthemes)
+library(ggpubr)
+library(ggcorr)
+### mod?le sur les donn?es gapmind 2007 2019 ------
+# lancement de paquetages
+library(estimatr) # procédures d'estimation optimisées
+library(AER) # paquetage d'économétrie complet
+library(olsrr) # suite complète d'estimations et tes avec ols 
+# https://olsrr.rsquaredacademy.com/index.html
+library(mctest) # paquetage complet de diagnostics de colinéarité
+### mises en forme améliorées des modèles
+library(broom)
+library(tidymodels)
+library(MASS)
+# listage des paquetages
+getwd() # afficher le dossier de travail.
+(.packages())
+
+
+### description de la base importée
+glimpse(data.aura)
+data.aura <- mutate(data.aura, across(83:137, as.factor)) # ça marche avec across
+# ici quand on importe, toutes qualitatives sont en integer, on pourrait donc aussi faire:
+# mutate_if(is.integer,as.factor)  :=> cf https://stackoverflow.com/questions/33180058/coerce-multiple-columns-to-factors-at-once
+# https://willhipson.netlify.app/post/dplyr_across/dplyr_across/
+
+
+
+

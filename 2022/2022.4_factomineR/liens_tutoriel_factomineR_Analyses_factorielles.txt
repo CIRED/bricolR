@@ -1,0 +1,5 @@
+# tutoriels stats intéressants:
+https://bookdown.org/evraloui/lbira2110/
+
+# formatage style C:
+https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/sprintf
