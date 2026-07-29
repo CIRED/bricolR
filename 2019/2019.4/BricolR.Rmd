@@ -1,0 +1,167 @@
+---
+title: 'BricolR : T=Rasters'
+author: "Philémon Poux"
+date: "28/05/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+
+load.lib<-c("raster","rgdal","tidyverse","gdalUtils","RColorBrewer","wesanderson","sf","stars")
+
+
+install.lib<-load.lib[!load.lib %in% installed.packages()]
+for(lib in install.lib) install.packages(lib,dependencies=TRUE)
+sapply(load.lib,require,character=TRUE)
+
+
+
+
+```
+
+## The basic of rasters with R
+  We are going to import population datasets for France and Spain and explore these rasters a little bit
+```{r}
+france__f_65plus <- raster("france_f_65plus.tif")
+france_m_65plus <- raster("france_m_65plus.tif")
+esp_65plus <- raster("spain_65plus.tif")
+
+###Do both file for France have the same extent, resolution etc ?
+extent(france__f_65plus)
+extent(france_m_65plus)
+
+###Plotting the rasters, choose your favorite palette and plot the results. You may want to break results with breaks
+plot(france__f_65plus)
+plot(france_m_65plus)
+
+###Do the same thing with ggplot
+france_df <- as.data.frame(france__f_65plus,xy=T) 
+ggplot(france_df)+geom_raster(aes(x=x,y=y,fill=france_f_65plus))
+
+###What is the max number of women older than 65 in France per cell ?
+cellStats(france__f_65plus,max)
+
+
+###Access the dataframe of all the values with the getValues() function 
+values <- getValues(france__f_65plus)
+
+
+
+
+
+```
+
+## Raster Operations with R
+We are now going to manipulate the rasters in order to compute the sum of men and women, have a map with Spain and France, crop the data to one region
+
+```{r}
+###Create a raster with the sum of men and women above 65 in France. Careful, you need to make sure both files are comparable to do so.
+res(france__f_65plus)
+res(france_m_65plus)
+origin(france__f_65plus)
+origin(france_m_65plus)
+
+france_m_65plus_agg <- aggregate(france_m_65plus,fact=2.5,fun=sum,na.rm=T)
+res(france_m_65plus_agg)
+
+france_m_65plus_res <- resample(france_m_65plus,france__f_65plus)
+res(france_m_65plus_res)
+compareRaster(france__f_65plus,france_m_65plus_res)
+france_65plus <- france__f_65plus+france_m_65plus_res
+plot(france_65plus)
+
+###Merge the data, careful, you might need to adjust the origins
+plot(esp_65plus)
+res(esp_65plus)
+
+origin(esp_65plus) <- origin(france_65plus)
+
+europe_65plus <- merge(france_65plus,esp_65plus)
+plot(europe_65plus,main="Population over 65 in France and Spain")
+
+###See the data only in Île-de-France
+extent_idf <- extent(c(1.44728,3.555687,48.12054,49.23719))
+plot(crop(france_m_65plus,extent_idf))
+
+```
+## Rasters and Vectors
+Let's see how you can manipulate both rasters and vectors data. We will mask a raster within a region, extract the values depending the regions, transform a raster into vector data...
+
+
+```{r cars}
+#Import the shapefile of the regions and check that it has the same CRS as our data
+regions <- st_read("regions/regions.shp")
+plot(regions)
+
+###Isolate the Occitanie and mask the data within this region
+Occitanie <- regions[which(regions$nom=="Occitanie"),]
+plot(crop(mask(europe_65plus,Occitanie),Occitanie))
+
+###Create contours for the 5 quantiles for europe, create a SpatialDataPoints of all cells that have a value 
+regionsSpatials <- as(regions,"Spatial")
+
+raster_regions <- rasterize(regionsSpatials,france_m_65plus)
+plot(raster_regions)
+
+breaks <- quantile(france__f_65plus)
+contours <- rasterToContour(france__f_65plus,levels=breaks)
+plot(france__f_65plus)
+plot(contours,add=T)
+
+points <- rasterToPoints(france__f_65plus,fun=function(x) x>10000)
+plot(points)
+
+###Extract the sum of population per regions in France
+extraction <- raster::extract(france_65plus,regions,fun=sum,na.rm=T)
+extraction
+regions$sumpop <- extraction
+ggplot(regions)+geom_sf(aes(fill=sumpop))
+
+```
+
+## Saving your work
+You can save your raster, stack different rasters with a stack or just save your working environment to come back to it later
+```{r pressure}
+###save your file
+writeRaster(x = europe_65plus ,filename = "europe_65plus.tif",overwrite=T)
+
+###create a stack with the data for women, men and the sum. Then save it into a multi layer file
+
+###Save your working environment for later, you can access it with load
+save.image("rasters.RData")
+
+```
+
+## GDAL
+For those willing to see how gdal works, I propose that we explore it together
+
+```{r}
+file_fra_large <- "C:/Users/Ameline/Desktop/Philemon/Databases/WorldPop/FRA/fra_f_65_80_2010.tif"
+file_spa_large <- "C:/Users/Ameline/Desktop/Philemon/Databases/WorldPop/ESP/esp_f_65_80_2010.tif"
+
+list_large <- c(file_fra_large,file_spa_large)
+france_large <- raster(file_fra_large)
+spain_large <- raster(file_spa_large)
+france_large <- raster(file_fra_large)
+origin(spain_large)
+origin(france_large)
+origin(spain_large) <- origin(france_large)
+system.time(merge(france_large,spain_large))
+
+merge_gdal <- function(lst) {
+  gdalbuildvrt(lst,"temp.vrt")
+  mosaic_rasters("temp.vrt","mosaic_gdal.tif",verbose=T,co=c("COMPRESS=LZW","BITS=12","TILED=YES"), ot="Float32",overwrite=T)
+  file.remove("temp.vrt")
+}
+system.time(merge_gdal(list_large))
+
+crs(france_large)
+new_crs <- CRS("+proj=laea +x_0=0 +y_0=0 +lon_0=0 +lat_0=0")
+system.time(truc <- projectRaster(france_large,crs=new_crs))
+system.time(gdalwarp(srcfile = file_fra_large,dstfile = "france_reprojected.tif",t_srs = new_crs,verbose=T,overwrite = T))
+
+
+```
+
+

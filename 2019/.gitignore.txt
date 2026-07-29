@@ -1,0 +1,25 @@
+# pdf
+*.pdf
+
+# MAC OS
+._.*.*
+
+# shapefile 
+*.ods
+*.prj
+*.shp
+*.shx
+
+# EMF image
+*.emf
+
+# Excel
+*.xls*
+
+# powerpoint
+*.ppt
+
+# 
+
+
+
