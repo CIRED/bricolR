@@ -1,0 +1,129 @@
+---
+title: "Indication de mise en forme"
+author: "Séminaire Bricole'R"
+date: ""
+output: 
+  pdf_document: 
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+---
+
+```{r , warnings=FALSE, echo=FALSE}
+library(knitr)
+```
+
+
+# Les titres :
+
+un dièse  par niveau de titres
+
+Exemple :
+
+## Titre niveau 2  
+
+### Titre niveau 3 
+
+#### Titre niveau 4  
+
+etc etc
+
+# Les saut de lignes
+
+Ligne sans espace à la fin
+Ligne avec 2 espaces à la fin   
+Troisième ligne
+
+# L'emphase
+ *italique*  
+**gras**
+
+
+
+#   les listes : au choix astériques,  '-' ,  '+' où des numeros 
+
+* item
+* item
+* item
+
++ item
++ item
++ item
+
+- item
+- item
+- item
+
+1. item
+2. item
+3. item
+
+
+# Les tableaux
+
+
+
+| Droite        |    centré     |   gauche  |
+| -------------:|  :-------------: | :---------|
+| am     |        am       |  am   |
+| am     |       am       |   stram  |
+
+
+```{r  results ='asis'}
+kable(head(cars, 3), caption = "Exemple de tableau")
+```
+
+
+```{r  results ='asis'}
+kable(head(cars, 3)/1000, caption = "Exemple de tableau 3",  format="pandoc")
+```
+
+```{r results ='hold' }
+kable(head(cars, 3)/1000, caption = "Exemple de tableau 4", digits=2, format="latex")
+```
+
+
+
+# Regression linéaire
+```{r  }
+library(texreg)
+interpol<-lm(speed~dist,data=cars)
+interpol2<-lm(speed~dist-1,data=cars)
+
+reg<-summary(interpol)
+modellist_ens=list()
+modellist_ens[[1]]=interpol
+modellist_ens[[2]]=interpol2
+
+screenreg(interpol,custom.model.names="Ma regression",single.row=TRUE)
+screenreg(l = modellist_ens, custom.model.names = c("avec intercept", "sans intercept")) 
+```
+
+```{r pander}
+library(pander)
+n <- 100
+x <- rnorm(n)
+y <- 2*x + rnorm(n)
+out <- lm(y ~ x)
+library(pander)
+panderOptions("digits", 2)
+pander(out)
+```
+
+```{r xtable, results="asis"}
+n <- 100
+x <- rnorm(n)
+y <- 2*x + rnorm(n)
+out <- lm(y ~ x)
+library(xtable)
+tab <- xtable(summary(out)$coef, digits=c(0, 2, 2, 1, 2))
+print(tab, type="latex")
+```
+
+
+# Figure
+
+```{r grpahique1,fig.height=5, echo=TRUE,warning=FALSE, fig.cap= 'Mon premier grapahique'}
+library(ggplot2)
+ggplot(cars)+geom_line(aes(dist,speed))+theme_bw()
+```

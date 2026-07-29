@@ -1,0 +1,93 @@
+---
+title: "Séminaire Bricol'R"
+subtitle: "Présentation package markdown"
+author: "Cyril Bourgeois"
+date: "19 février 2018"
+output: 
+  beamer_presentation: 
+    colortheme: dolphin
+    fig_caption: yes
+    fonttheme: professionalfonts
+    highlight: espresso
+    keep_tex: yes
+    theme: Frankfurt
+    toc: yes
+---
+
+
+
+## Markdown : Qu'est-ce que c'est ?
+- Langage simple de composition de documents (HTML, PDF, WORD), des présentations avec éventuellement des composantes intaractives: Shiny)
+- Entrelaçant du texte, code informatique et des sorties dans le même document
+
+## Markdown : Utilités et avantages 
+- Recherche reproductible (le lecteur d'une publication scientifique peut repoduire par lui-même les résultats).
+- Programmation lettrée (au lieu d'échanger un script R commenté, on échange un document contenant à la fois l'explication du code, le code et le résultats du code).
+- Facilite la rédaction de rapport d'analyse de données. 
+- La visualition/analyse/comparaison de sorties de modéles.
+- Garder une trace visuelle à la fois des données/analyses produite et de comment on les a obtenues.
+- Falicite la diffusion de package, fonction R (ou autres).
+
+## Markdown : Pour chaque bout de code dans, on peut afficher dans le document final
+- seulement le code 
+- le code et les sorties informatiques ( Figure, tableau, résulats de régression linéaire etc, etc)
+- seulement les sorties informatiques  ou ..
+- rien du tout
+
+
+## Un peu plus en détail
+
+Le markdown se compose donc de texte  et de block R  
+
+### Les blocks R se compose comme ceci:   
+
+\```{r name, options}  
+code  
+\```
+
+---
+
+Utilité du name :    
+
+- Se répérer plus facilement dans le rmd  
+- Nommes les figures produites par le rmd  
+
+Options courantes :
+
+- eval(TRUE par défault): détermine si le code R doit être évalué ou non  
+- echo(TRUE par défault): détermine si le code R doit être affiché ou non  
+- warnings(TRUE par défault): détermine si les messages d'avertissement doivent être affichés ou non  
+- Taille des figures, titres des figures ou des tableaux, etc, etc
+
+##  Quelques exemples basiques 
+
+```{r cars}
+summary(cars)
+```
+
+## Figures
+
+```{r grpahique1,fig.height=4.5, echo=TRUE,warning=FALSE, fig.cap= 'Mon premier graphique'}
+library(ggplot2)
+ggplot(cars)+geom_line(aes(dist,speed))+theme_bw()
+```
+
+## Tableaux 1
+
+```{r  results ='asis'}
+library(knitr)
+kable(head(cars, 3), caption = "Exemple de tableau")
+```
+
+
+## Tableaux 2 
+```{r  results ='asis'}
+kable(head(cars, 3)/1000, 
+      caption = "Exemple de tableau 2",  format="pandoc")
+```
+
+## Tableau 3
+```{r results ='hold' }
+kable(head(cars, 3)/1000, digits=2,
+      caption = "Exemple de tableau 3",  format="latex")
+```
