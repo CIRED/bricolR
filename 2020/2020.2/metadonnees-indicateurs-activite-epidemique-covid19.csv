@@ -1,0 +1,4 @@
+Colonne;Type;Description_FR;Description_EN;Exemple
+extract_date;string($date);Date de publication de l'indicateur;Date of publication of the indicator;30/04/2020
+departement;integer;Département;Department;971
+indic_synthese;string ;Indicateur d'activité épidémique ;Epidemic activity indicator ;vert
