@@ -1,0 +1,288 @@
+---
+title: "Séminaire R 2025.5 : bases de quarto"
+number-sections: true
+author: "Franck Nadaud"
+date: "2025-07-22"
+html_document:
+    code_folding: hide
+    theme: readable
+    highlight: zenburn
+    toc: true
+    toc_depth: 2
+    numbered_section: true
+    fig_width: 13
+    fig_height: 8
+    fig_caption: true
+    df_print: paged
+---
+
+# Introduction
+
+Quarto est une extension de rmarkdown qui supporte quatre langages de programmation R, python, JS et Julia. Il peut être utilisé dans chacun des ide supportant ces langages et bien sûr dans VScode.
+
+Quarto utilise toute la syntaxe de rmarkdown en mode plus étendu encore puisqu'il supporte bien plus de formats de documents en production.
+
+Il est conseillé d'installer pandoc bien que la version partielle installée avec quarto ou rmarkdown soit suffisante pour les travaux de base.
+
+## Les rudiments de quarto
+
+L'intérêt du site [quarto](quarto.org) est qu'il rappelle toute la syntaxe de rmardown avec des exemples :
+
+\<[https:/quarto.org](https://quarto.org)\>
+
+[syntaxe rmarkdown](https://quarto.org/docs/authoring/markdown-basics.html)
+
+## Syntaxe de base de rmarkdown / quarto
+
+On utilise l'éditeur rmarkdown qui est le même que celui de quarto.
+
+***montrer ici mode source / visuel***
+
+On peut donc utiliser la syntaxe de base de rmarkdown *pour écrire du texte* et le **mettre en forme**.
+
+Les mises en formes sont immédiates et on peut écrire toute sorte de texte au kilomètre. Les mises en formes sont immédiatement appliquées.
+
+On a donc des mises en formes directes : (a^2^) (b~3~) voire du code verbatim `x <- 1`.
+
+Tout cela permet de composer des tutoriels, sites, présentations etc.
+
+Avec pandoc on accède à tex dans tous les environnements de développement.
+
+On peut donc écrire des équations en ligne $U(x)=Ac^{\sigma/(1+\sigma)}$ en ligne ou insérées :
+
+$$
+U(x) = Ac^{\sigma/(1+\sigma)}
+$$
+
+On peut insérer des figures avec des titres :
+
+![Ceci n'est pas un imaclimati](sjgamespridepin.png)
+
+![Explorateur de type Suleiman](Suleiman_scout_ship.jpg)
+
+On peut gérer des listes de points :
+
+-   pour les présentations
+
+-   par exemple
+
+    -   l'indentation permet de gérer les sous-listes
+
+    -   avec deux espaces
+
+***Attention ! Les listes en quarto doivent être précédées d'une ligne vide***, contrairement aux autres éditeurs de markdown (tels que github ou Jupyter) : [listes dans quarto](https://quarto.org/docs/authoring/markdown-basics.html#lists)
+
+Enfin on peut mettre des notes de bas[^1] ou des notes longues.[^2]
+
+[^1]: numérotation continue\^1
+
+[^2]: \^note longue
+
+## Traitements dans quarto
+
+Les traitements quelque soit la plateforme s'affichent dans des blocs de markdown executables.
+
+Ils peuvent être soit insérés, mis en formes voire même standardisés sous forme de cadres formatés.
+
+```{r, paramètres-généraux, include=FALSE}
+knitr::opts_chunk$set(
+  comment = '', fig.width = 13, fig.height = 8
+)
+# préférez les tirets dans les titres de blocs de code rmarkdown
+```
+
+Les blocs de code rmarkdown knitr doivent respecter les règles importantes suivantes :
+
+1.  ils doivent tenir en une seule ligne ;
+2.  ils doivent tous être différents sinon knitr stopera l'exécution ;
+3.  préférez les tirers comme séparateurs de titres de blocs
+
+Le site suivant récapitule toutes les options knitr : [liste des options knitr](https://yihui.org/knitr/options/)
+
+```{r, lancement-des-paquetages-requis}
+library(microbenchmark)
+library(kableExtra)
+library(tidyverse)
+library(plotly)
+library(hrbrthemes) # pour le thème ipsum
+```
+
+### exemple chunk
+
+```{r}
+#| my-chunk, echo = FALSE, fig.width = 10,
+#| fig.cap = "This is a long long
+#|   long long caption."
+
+plot(cars)
+```
+
+### exemple chunk
+
+```{r, my-chunk, echo = FALSE, fig.width = 10, fig.cap = "long long caption."}
+
+plot(cars)
+```
+
+## Exemples de blocs de code dans quarto
+
+Nous présentons quelques fonctions executées dans quarto, à partir de la session 2025.2 sur les comparaisons de fonctions dans R.
+
+```{r, comparaison de fonctions dans R, echo = FALSE}
+library(microbenchmark)
+# utilité de microbenchmark
+ti <- proc.time()
+(a <- 2^5)
+ti <- proc.time() - ti
+# résultat ti
+(ti)
+# comparaison microbenchmark
+res <- microbenchmark(a <- 2^5, times = 1000L)
+summary(res)
+```
+
+## fonctions simples
+
+```{r, tests de fonctions simples}
+library(kableExtra)
+x <- rnorm(100)
+test_means <- microbenchmark(mean(x), sum(x)/length(x))
+# distinguer les fonctions selon leur type :
+(test_means)
+
+boxplot(test_means)
+
+table_test_means <- summary(test_means)
+
+(table_test_means)
+```
+
+Comment convertir les tables microbenchmark : <https://github.com/rstudio/rmarkdown/issues/1469> Faire summary puis utiliser kableExtra pour définir la table à partir du summary()
+
+Les points clef : (1) créez vos propres fonctions: elles seront souvent plus rapides que celles de R; (2) **utilisez des fonctions de type .Internal le plus souvent possible**.
+
+## Quelques astuces utiles pour quarto
+
+Nous avons cherché quelques liens intéressants d'astuces quarto dont :
+
+[astuces quarto pour R](https://www.productive-r-workflow.com/quarto-tricks)
+
+## [séparateurs de section simples](https://www.productive-r-workflow.com/quarto-tricks#horizontal-separator)
+
+une séries de tirets ou trois \*\*\* suffisent pour créer une section
+
+```{r, utilité de colMeans et colSums}
+xx <- rbind(rnorm(100), rnorm(100))
+test_sums <- microbenchmark(sum(xx),
+               mean(xx),
+               sum(xx)/length(xx),
+               colSums(xx),
+               colMeans(xx))
+# notez la vitesse de colSums et colMeans
+(test_sums)
+boxplot(test_sums, cex.axis = 0.8)
+
+(table_test_sums <- summary(test_sums))
+```
+
+## fonctions rapides en régression {#lm-lm.fit}
+
+```{r, en regression lm ou lm.fit}
+y <- rnorm(100)
+xd <- as.matrix(cbind(rep(1,100), x))
+test_lm <- microbenchmark(
+lm.fit(xd, y),
+lm(y ~ x))
+
+(test_lm)
+boxplot(test_lm)
+# notez la différence et l'inversion des arguments entre lm et lm.fit
+# pratiquement 15 fois plus rapide pour lm.fit
+
+table_test_lm <- summary(test_lm)
+```
+
+Notez la différence entre lm.fit et lm : `364.00/17.95` ns soit facteur 20...
+
+### Annotations avec signets dans un document
+
+[liens internes](https://www.productive-r-workflow.com/quarto-tricks#internal-link)
+
+On peut mettre des signets avec des liens dans un document html. Un lien vers [lm-lm.fit](#lm-lm.fit) du document !
+
+Donc ajoutant {#nom-de-section} cela ajoute un lien html qui renvoie à la section. Notez que le nom de la section n'apparaît pas : seul le sigent apparaît.
+
+### Gain d'espace avec onglets de navigation
+
+On peut gagner de l'espace à l'aide d'onglets de navigation. [onglets de navigation](https://www.productive-r-workflow.com/quarto-tricks#tabs) ::: {.panel-tabset .nav-pills}
+
+## Scatterplot
+
+Content that will show under first tab
+
+## Boxplot
+
+Content that will show under first tab
+
+## Barplot
+
+Content that will show under first tab :::
+
+## utiliser plotly
+
+On peut interagir avec plotly en direct [utiliser plotly](https://www.productive-r-workflow.com/quarto-tricks#plotly)
+
+```{r, utiliser-plotly-dans-quarto, fig.cap = "Un bien joli graphique interactif"}
+# Usual area chart
+data <- as_tibble(xd,y) # préférez as_tibble() à tibble()
+p <- data %>% 
+    ggplot(aes(x=x, y=y)) +
+    geom_point(color="#69b3a2") +
+    theme_ipsum()
+
+# Turn it interactive with ggplotly
+p <- ggplotly(p)
+p
+```
+
+On obtient un beau graphique interactif : idéal pour un document pour profanes joueurs ou pour préparer un shiny...
+
+Reprendre ici et ajouter :
+
+https://www.productive-r-workflow.com/quarto-tricks#figure-caption
+
+# utiliser d'autres plateformes dans R par quarto
+
+Quarto permet de dialoguer entre Javascript, Julia, Python et R.
+
+On peut utiliser quarto dans les autres ide.
+
+exemple python :
+
+---
+title: "matplotlib demo"
+format:
+  html:
+    code-fold: true
+jupyter: python3
+---
+
+For a demonstration of a line plot on a polar axis, see @fig-polar.
+
+```{python}
+#| label: fig-polar
+#| fig-cap: "A line plot on a polar axis"
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+r = np.arange(0, 2, 0.01)
+theta = 2 * np.pi * r
+fig, ax = plt.subplots(
+  subplot_kw = {'projection': 'polar'} 
+)
+ax.plot(theta, r)
+ax.set_rticks([0.5, 1, 1.5, 2])
+ax.grid(True)
+plt.show()
+```

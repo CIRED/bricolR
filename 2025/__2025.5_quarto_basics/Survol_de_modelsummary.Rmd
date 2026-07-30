@@ -1,0 +1,137 @@
+---
+title: "Bricole_R_Modelsummary"
+author: "Franck Nadaud"
+date: "2025-04-23"
+html_document:
+    code_folding: hide
+    theme: readable
+    highlight: zenburn
+    toc: true
+    toc_depth: 2
+    numbered_section: true
+    fig_width: 13
+    fig_height: 8
+    fig_caption: true
+    df_print: paged
+---
+
+# initialisations {-}
+
+```{r setup, include = FALSE, echo = FALSE, warning = TRUE}
+knitr::opts_chunk$set(
+                      echo = TRUE,
+                      warning = TRUE,
+                      message = FALSE,
+                      comment = '',
+                      fig.width = 13,
+                      fig.height = 8)
+```
+
+# gestion des chemins {-}
+
+```{r, test des chemins du rmarkdown}
+getwd()
+here::here()
+```
+# lancement des paquetages requis {-}
+
+tester les paquetages installés : 
+
+https://stackoverflow.com/questions/4090169/elegant-way-to-check-for-missing-packages-and-install-them
+
+
+
+```{r inialisation, echo = FALSE, include = FALSE}
+## Please make sure to install all the required packages before the workshop.
+# List of required packages
+packages <- c("dplyr", "tidyverse", "ggplot2", "ggridges", "datasauRus", 
+              "colorspace", "pheatmap", "survival", "survminer", "qqman", 
+              "plotly", "gganimate", "gifski", "palmerpenguins", "gapminder", 
+              "shiny", "DT", "shinydashboard")
+
+# Install missing packages
+missing_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+
+if (length(missing_packages) > 0) {
+  install.packages(missing_packages, dependencies = TRUE)
+}
+
+# Load packages
+lapply(packages, library, character.only = TRUE)
+  
+
+
+library(microbenchmark) 
+library(FactoMineR)
+library(factoextra)
+library(Factoshiny)
+library(missMDA)
+library(mice)
+library(Rfast)
+library(ICSNP)
+library(magrittr)
+library(flextable)
+library(crosstable)
+library(stargazer)
+library(readxl)
+library(writexl)
+library(RColorBrewer)
+library(ggthemes)
+library(ggpubr)
+library(GGally)
+library(ggstats)
+library(estimatr)
+library(AER)
+library(olsrr)
+library(lmtest)
+library(mctest)
+library(broom)
+library(tidymodels)
+library(modelsummary)
+library(MASS)
+library(sandwich)
+library(robustbase)
+library(xtable)
+library(kableExtra)
+library(knitr)
+library(easystats)
+library(tidyverse)
+library(purrr)
+library(janitor) # lancer janitor à la fin pour disposer de clean_names()
+library(sjstats) # https://strengejacke.github.io/sjstats/reference/index.html
+library(weights) # pour calculer les pourcentages pondérés de modalités de facteurs
+```
+
+# Ajustement des paramètres ggplot {-}
+
+```{r, ajustement des thèmes ggplot}
+theme_set(theme_bw())
+theme_update(plot.title = element_text(hjust = 0.5, size = 14),
+             plot.subtitle = element_text(hjust = 0.5, size = 12),
+             strip.text.x = element_text(size = 10),
+             text = element_text(size = 6),
+             axis.title.x = element_text(size = 8),
+             axis.title.y = element_text(size = 8),
+             axis.text = element_text(size = 6),
+             legend.text = element_text(size = 8),
+             legend.title = element_text(size = 10),
+             legend.title.align = 0.5)
+ciredium <- "#438787"
+```
+
+# principales fonctions de modelsummary
+
+On va travailler avec la base cars pour simplifier
+
+```{r, cars}
+glimpse(mtcars)
+# skim statistiques globales
+datasummary_skim(mtcars)
+# balance : comparaisons de moyennes selon un facteur
+datasummary_balance(~gear, mtcars) 
+# correlations
+datasummary_correlation(mtcars)
+# nesting
+datasummary(wt ~ gear * (mean + sd), mtcars) 
+```
+

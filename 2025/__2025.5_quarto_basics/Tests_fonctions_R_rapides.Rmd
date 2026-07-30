@@ -1,0 +1,1830 @@
+---
+title: "Conseils pour rendre R plus rapide"
+author: "Franck Nadaud"
+date: "2025-02-09"
+output: 
+  html_document:
+    code_folding: hide
+    theme: readable
+    highlight: zenburn
+    toc: true
+    toc_depth: 2
+    numbered_section: true
+    fig_width: 13
+    fig_height: 8
+    fig_caption: true
+    df_print: paged
+---
+
+# Initialisation du markdown {.unnumbered}
+
+## définition des options globales du document {.unnumbered}
+
+```{r global options set, echo = FALSE}
+knitr::opts_chunk$set(
+                      echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      comment = '',
+                      fig.width = 13,
+                      fig.height = 8)
+```
+
+## chargement des paquetages nécessaires
+
+```{r inialisation, echo = FALSE, include = FALSE}
+library(microbenchmark) 
+library(Rfast)
+library(ICSNP)
+library(magrittr)
+library(flextable)
+library(crosstable)
+library(stargazer)
+library(readxl)
+library(writexl)
+library(RColorBrewer)
+library(ggthemes)
+library(ggpubr)
+library(GGally)
+library(ggstats)
+library(estimatr)
+library(AER)
+library(olsrr)
+library(lmtest)
+library(mctest)
+library(broom)
+library(tidymodels)
+library(modelsummary)
+library(MASS)
+library(sandwich)
+library(robustbase)
+library(xtable)
+library(kableExtra)
+library(knitr)
+library(easystats)
+library(tidyverse)
+library(janitor) # lancer janitor à la fin pour disposer de clean_names()
+library(sjstats) # https://strengejacke.github.io/sjstats/reference/index.html
+library(weights) # pour calculer les pourcentages pondérés de modalités de facteurs
+```
+
+Sur l'entrée cld des résultats microbenchmark: <https://stackoverflow.com/questions/76014785/what-is-the-meaning-of-the-cld-column-in-microbenchmark> cld = compact letter display (but of what ???)
+
+# introduction
+
+Ce document offre un résumé des astuces et préconisations proposées par l'équipe de Michail Tsagris, co-auteur du paquetage Rfast. On reproduit les codes proposés par le auteurs puis on construit un tableau synthètique en forme d'aide mémoire destiné aux utilisateurs et développeurs.
+
+```{r, session info}
+sessionInfo()
+```
+
+## chargement des paquetages {.unnumbered}
+
+```{r, chargement paquetages}
+library(microbenchmark)
+```
+
+# Astuces générales
+
+Ajustement des graphiques R :
+
+<https://stackoverflow.com/questions/56857637/how-to-edit-r-plots-generated-by-other-function-that-uses-plot-to-create-it> <https://stackoverflow.com/questions/1828742/rotating-axis-labels-in-r> <https://www.datacamp.com/doc/r/axes-and-text> <https://www.datacamp.com/doc/r/parameters>
+
+## Evalutation du temps
+
+```{r, utilité de microbenchmark}
+ti <- proc.time()
+(5)
+ti <- proc.time() - ti
+# résultat ti
+(ti)
+```
+
+## fonctions simples
+
+```{r, tests de fonctions simples}
+x <- rnorm(100)
+test_means <- microbenchmark(mean(x), sum(x)/length(x))
+# distinguer les fonctions selon leur type :
+(test_means)
+
+boxplot(test_means)
+
+table_test_means <- summary(test_means)
+
+kable_test_means <- table_test_means %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      caption = "Evaluation du temps de calcul par microbenchmark",
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_means.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_means.html",
+                  "kable_test_means.png") 
+
+(kable_test_means)
+```
+
+Comment convertir les tables microbenchmark : <https://github.com/rstudio/rmarkdown/issues/1469> Faire summary puis utiliser kableExtra pour définir la table à partir du summary()
+
+Les points clef : (1) créez vos propres fonctions: elles seront souvent plus rapides que celles de R; (2) **utilisez des fonctions de type .Internal le plus souvent possible**.
+
+```{r, utilité de colMeans et colSums}
+xx <- rbind(rnorm(100), rnorm(100))
+test_sums <- microbenchmark(sum(xx),
+               mean(xx),
+               sum(xx)/length(xx),
+               colSums(xx),
+               colMeans(xx))
+# notez la vitesse de colSums et colMeans
+(test_sums)
+boxplot(test_sums, cex.axis = 0.8)
+
+table_test_sums <- summary(test_sums)
+
+kable_test_sums <- table_test_sums %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_sums.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_sums.html",
+                  "kable_test_sums.png") 
+
+(kable_test_sums)
+```
+
+## rechercher les fonctions les plus rapides:
+
+```{r, en regression lm ou lm.fit}
+y <- rnorm(100)
+xd <- as.matrix(cbind(rep(1,100), x))
+test_lm <- microbenchmark(
+lm.fit(xd, y),
+lm(y ~ x))
+
+(test_lm)
+boxplot(test_lm)
+# notez la différence et l'inversion des arguments entre lm et lm.fit
+# pratiquement 15 fois plus rapide pour lm.fit
+
+table_test_lm <- summary(test_lm)
+
+kable_test_lm <- table_test_lm %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_lm.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_lm.html",
+                  "kable_test_lm.png") 
+
+(kable_test_lm)
+
+```
+
+On voit combien il est intéressant d'utiliser lm.fit si seuls les coefficients importent.
+
+<https://www.appsilon.com/post/r-microbenchmark>
+
+```{r, eviter apply pour des moyennes}
+eviter_apply <- microbenchmark(mean(xx),
+                               sum(xx)/length(xx),
+                               colMeans(xx),
+                               apply(xx, 2, mean))
+# rappel : apply(x, marge, fonction)
+# marge ligne ou colonne ou les deux avec c(1, 2)
+
+(eviter_apply)
+boxplot(eviter_apply)
+
+table_eviter_apply <- summary(eviter_apply)
+
+kable_eviter_apply <- table_eviter_apply %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_eviter_apply.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_eviter_apply.html",
+                  "kable_eviter_apply.png") 
+
+(kable_eviter_apply)
+```
+
+Notez la différence entre apply et les autres fonctions !
+
+```{r, apply pour la médiane}
+eviter_apply_2 <- microbenchmark(apply(xx, 2, mean),
+                                 apply(xx, 2, median),
+                                 median(xx))
+# rappel : apply(x, marge, fonction)
+# marge ligne ou colonne ou les deux avec c(1, 2)
+
+(eviter_apply_2)
+boxplot(eviter_apply_2)
+table_eviter_apply_2 <- summary(eviter_apply_2)
+kable_eviter_apply_2 <- table_eviter_apply_2 %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_eviter_apply_2.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_eviter_apply_2.html",
+                  "kable_eviter_apply_2.png") 
+
+(kable_eviter_apply_2)
+```
+
+## éviter les parenthèses superflues
+
+L'interpréteur de commande prend du temps pour tester les parenthèses. Il convient donc d'éviter les parenthèses superflues afin surtout dans les chaînes de traitements longues et répétitives. Plus encore sur de grands objets.
+
+```{r, effet des parenthèses superflues}
+parentheses <- microbenchmark(2 + 2,
+               (2 + 2),
+               ((2 + 2)),
+               (((2 + 2))),
+               (((((2 + 2))))),
+               (((((((2 + 2))))))))
+(parentheses)
+boxplot(parentheses, cex.axis = 0.7)
+table_parentheses <- summary(parentheses)
+kable_parentheses <- table_parentheses %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_parentheses.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_parentheses.html",
+                  "kable_parentheses.png") 
+
+(kable_parentheses)
+
+```
+
+Notez les différences de maxima qui ne dépendent pas du nombre de parenthèses.
+
+## extraire le nombre de lignes / colonnes d'une matrice
+
+```{r, le plus rapide}
+dimension <- microbenchmark(ncol(x), nrow(x), dim(x)[1], dim(x)[2],
+               ncol(xx), nrow(xx), dim(xx)[1], dim(xx)[2])
+
+(dimension)
+boxplot(dimension, las = 2, xlab = "")
+table_dimension <- summary(dimension)
+kable_dimension <- table_dimension %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_dimension.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_dimension.html",
+                  "kable_dimension.png") 
+
+(kable_dimension)
+
+```
+
+dim(x)[index] est deux fois plus rapide en moyenne !
+
+## créer une matrice à partir d'un vecteur
+
+```{r, passer un vecteur en matrice}
+gen_matrix <- microbenchmark(as.matrix(x, ncol = 10),
+               matrix(x, ncol = 10),
+               as.matrix(x, ncol = 100),
+               matrix(x, ncol = 100),
+               as.matrix(x, ncol = 1000),
+               matrix(x, ncol = 1000))
+
+(gen_matrix)
+boxplot(gen_matrix, las = 2,  xlab = "")
+table_gen_matrix <- summary(gen_matrix)
+kable_gen_matrix <- table_gen_matrix %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_gen_matrix.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_gen_matrix.html",
+                  "kable_gen_matrix.png") 
+
+(kable_gen_matrix)
+```
+
+trois fois plus rapide
+
+## opérations sur des matrices avec des logs
+
+```{r, opérations sur des matrices avec logs}
+X <- matrix(rnorm(100), nrow = 10, ncol = 10)
+Z <- matrix(rnorm(10000), nrow = 100, ncol = 100)
+matrix_logs <- microbenchmark(log(det(X)),
+               determinant(X, logarithm = TRUE),
+               log(det(Z)),
+               determinant(Z, logarithm = TRUE))
+(matrix_logs)
+boxplot(matrix_logs, cex.axis = 0.7)
+table_matrix_logs <- summary(matrix_logs)
+kable_matrix_logs <- table_matrix_logs %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_matrix_logs.html")
+
+options(chromote.headless = "new")
+
+(kable_matrix_logs)
+
+webshot2::webshot("kable_matrix_logs.html",
+                  "kable_matrix_logs.png") 
+
+
+
+```
+
+## calcul de probabilités :
+
+### le Khi²
+
+```{r, utiliser les options de direction du test}
+k = mean(x) / mean(y)
+tails <- microbenchmark(1-pchisq(k, 99), pchisq(k, 99, lower.tail = FALSE))
+(tails)
+boxplot(tails)
+table_tails <- summary(tails)
+kable_tails <- table_tails %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_tails.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_tails.html",
+                  "kable_tails.png") 
+
+(kable_tails)
+```
+
+## utiliser l'algèbre pour simplifier les calculs
+
+```{r, produit de vecteurs et scalaires}
+a <- pi 
+sumprod <- microbenchmark(sum(a * x), a * sum(x), a * sum(xd), sum(a * xd))
+boxplot( sumprod )
+table_sumprod <- summary( sumprod )
+kable_sumprod <- table_sumprod %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_sumprod.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_sumprod.html",
+                  "kable_sumprod.png")
+```
+
+En moyenne, le gain est double !
+
+## utilisation de eigen() ou princomp et prcomp
+
+Privilégier prcomp sur princomp et surtout eigen()
+
+\_\_à refaire calcul sur matrice 1000x1000 en parallélisant !
+
+```{r, composantes principales}
+# réduire taille de W !!!
+W = matrix(rnorm(40000), ncol = 200, nrow = 200)
+test_pca <- microbenchmark(prcomp(X),
+               princomp(X),
+               eigen(cov(X)),
+               eigen(cor(X)), 
+               prcomp(Z),
+               princomp(Z),
+               eigen(cov(Z)),
+               eigen(cor(Z)),
+               prcomp(W),
+               princomp(W),
+               eigen(cov(W)),
+               eigen(cor(W)))
+(test_pca)
+boxplot(test_pca, las = 2, cex.axis = 0.75, xlab = "")
+table_test_pca <- summary(test_pca)
+kable_test_pca <- table_test_pca %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_pca.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_pca.html",
+                  "kable_test_pca.png")
+
+```
+
+Contrairement au papier de Tsagris & alii, prcomp est plus rapide pour les petites matrices, princomp le plus lent et eigen(cov()) ou eigen(cor()) comparables. Par contre, pour les grandes matrices princomp et eigen sont plus rapides.
+
+**En fait prcomp est plus rapide quand p \< 100, princomp plus rapide quand p \~ 100 et eigen beaucoup plus quand p \> 100**
+
+## utilisation répétée de glm ou lm
+
+```{r, utilisation répétée de glm ou lm}
+glm_lm <- microbenchmark(glm(y ~ x),
+               glm(y ~ x,
+                   y = FALSE, model = FALSE),
+               lm(y ~ x),
+               lm(y ~ x,
+                  y = FALSE, model = FALSE))
+(glm_lm)
+boxplot(glm_lm, xlab = "", cex.axis = 0.70)
+table_glm_lm <- summary(glm_lm)
+kable_glm_lm <- table_glm_lm %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_glm_lm.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_glm_lm.html",
+                  "kable_glm_lm.png")
+```
+
+Le gain n'est pas évident ici ! à refaire sur un exemple conséquent en situation réelle ?
+
+## calculs avec log
+
+calculer log (1+x) a une fonction spécifique plus rapide :
+
+```{r, calculer log 1 plus x}
+logs <- microbenchmark(log(1+a), log1p(a))
+(logs)
+boxplot(logs)
+table_logs <- summary(logs)
+kable_logs <- table_logs %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_logs.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_logs.html",
+                  "kable_logs.png")
+```
+
+un gain de 25 % environ...
+
+## utilité de la fonction tabulate
+
+```{r, comparer table et tabulate}
+tables <- microbenchmark(table(iris[, 5]),
+               tabulate(iris[, 5]),
+               table(W[,10]),
+               tabulate(W[,10]))
+(tables)
+boxplot(tables)
+table_tables <- summary(tables)
+kable_tables <- table_tables %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_tables.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_tables.html",
+                  "kable_tables.png")
+```
+
+tabulate est quantre fois plus rapide sur iris et pratiquement 100 fois plus rapide sur W !!!
+
+testons sur la série W, X, Y, Z :
+
+```{r, tests sur les tables de 10 à 1000 colonnes}
+Y <- matrix(rnorm(1e6), nrow = 1000, ncol = 1000)
+large_tables <- microbenchmark(table(X[,1]),
+               tabulate(X[,1]),
+               table(Z[,1]),
+               tabulate(Z[,1]),
+               table(W[,1]),
+               tabulate(W[,1]),
+               table(Y[,1]),
+               tabulate(Y[,1]))
+(large_tables)
+boxplot(large_tables, xlab = "", las = 2, cex.axis = 0.75)
+table_large_tables <- summary(large_tables)
+kable_large_tables <- table_large_tables %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_large_tables.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_large_tables.html",
+                  "kable_large_tables.png")
+```
+
+La vitesse croit linéairement avec la taille !
+
+Table calcule la réparition sur un facteur Tabulate compte dans un veceur donné la fréquence de chaque entier !
+
+<https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/tabulate>
+
+```{r, attention avec tabulate}
+v <- rep(0:5, each = 4)
+table(v)
+tabulate(v) # zero manque
+v <- rep(c(1, 3, 4), each = 5)
+table(v)
+tabulate(v) # le zéro indique l'absence de 2 dans v
+```
+
+Tabulate est super rapide et donc plus utile dans certains problèmes de discrimination, de classification ou de typologie. En outre, il indique zéro pour les catégories vides ce qui peut être utile dans ces contextes. Le problème est que tabulate n'admet que des entiers naturels et ignore les nombre négatifs.
+
+```{r, éviter les parenthèses}
+parentheses_2 <- microbenchmark(aucune = for (i in 1:100) 5,
+               deux = for (i in 1:100) ((5)),
+               cinq = for (i in 1:100) ((((5)))))
+(parentheses_2)
+boxplot(parentheses_2)
+table_parentheses_2 <- summary(parentheses_2)
+kable_parentheses_2 <- table_parentheses_2 %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 1, 1, 1, 1, 1, 1, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En millisecondes") %>%
+  save_kable("kable_parentheses_2.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_parentheses_2.html",
+                  "kable_parentheses_2.png")
+
+```
+
+# Utiliser colMeans et colSums
+
+Supposons que l'on veuille centrer des données avec apply
+
+```{r, centrage selon cinq méthodes sur données larges}
+data <- matrix(rnorm(1000 * 10), nrow = 10)
+m <- colMeans(data)
+n <- nrow(data) ; p <- ncol(data)
+cent <- function(x) x - mean(x)
+cent_apply <- function() apply(data, 2, cent) # rappel == 2 = marges en colonne
+cent_scale <- function() scale(data, center = TRUE, scale = FALSE)
+cent_sweep <- function() sweep(data, 2L, m)
+cent_tt <- function() t( t(data) - m )
+cent_rep <- function() data - rep( m, rep(n, p) )
+centrage <- microbenchmark(cent_apply(),
+                           cent_scale(),
+                           cent_sweep(),
+                           cent_tt(),
+                           cent_rep())
+(centrage)
+labels <- c("apply", "scale", "sweep", "t(t(.))", "rep")
+boxplot(centrage, names = labels)
+table_centrage <- summary(centrage)
+kable_centrage <- table_centrage %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_centrage.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_centrage.html",
+                  "kable_centrage.png")
+
+```
+
+Ici rep est le plus rapide. Notez la lenteur de apply comparativement aux autres méthodes. Avec des temps d'execution nettement différents de l'article de Tsagris.
+
+<https://design.tidyverse.org/cs-rep.html>
+
+rep() est une fonction base R très puissante et rapide.
+
+Maintenant comparons avec un fichier large.
+
+Comme Tsagris & alii le remarquent page 5, dans ce contexte de cadre de données larges, la méthode trois devient la plus rapide de toutes et plus encore de la méthode quatre !!!
+
+La transposition suivie de centrage puis de retransposition est 25 fois plus lente que la méthode sweep()
+
+Il faut donc préférer sweep() sur les formats larges.
+
+```{r, centrage selon cinq méthodes sur données longues}
+data <- matrix(rnorm(1000 * 10), nrow = 1000)
+m <- colMeans(data)
+n <- nrow(data) ; p <- ncol(data)
+cent <- function(x) x - mean(x)
+cent_apply <- function() apply(data, 2, cent) # rappel == 2 = marges en colonne
+cent_scale <- function() scale(data, center = TRUE, scale = FALSE)
+cent_sweep <- function() sweep(data, 2L, m)
+cent_tt <- function() t( t(data) - m )
+cent_rep <- function() data - rep( m, rep(n, p) )
+centrage <- microbenchmark(cent_apply(),
+                           cent_scale(),
+                           cent_sweep(),
+                           cent_tt(),
+                           cent_rep())
+(centrage)
+labels <- c("apply", "scale", "sweep", "t(t(.))", "rep")
+boxplot(centrage, names = labels)
+table_centrage <- summary(centrage)
+kable_centrage <- table_centrage %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_centrage_long.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_centrage_long.html",
+                  "kable_centrage_long.png")
+
+```
+
+Ici les temps sont moins dispersés mais le centrage par rep est beaucoup plus rapide : presque dix fois plus rapide que apply.
+
+## sommes par groupes : avec aggregate ou ina
+
+On va créer un facteur d'entiers entre 1 et 4
+
+<https://bookdown.org/kochiuyu/Technical-Analysis-with-R/random-number.html>
+
+```{r, rowsum contre aggregate}
+data <- matrix( rnorm(1000 * 5), nrow = 1000 )
+group <- sample( 1 : 5, 1000, replace = T )
+test_aggreg <- function() aggregate(data, by = list(group), mean)
+test_rowsum_1 <- function() rowsum(data, group) / as.vector( table(group) )
+test_rowsum_2 <- function() rowsum(data, group, reorder = FALSE) / as.vector( table(group) )
+aggreg <- microbenchmark(test_aggreg(), test_rowsum_1(), test_rowsum_2())
+(aggreg)
+labels <- c("aggregate", "rowsum table", "rowsum table(group)")
+boxplot(aggreg, names = labels)
+table_aggreg <- summary(aggreg)
+kable_aggreg <- table_aggreg %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_aggreg_long.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_aggreg_long.html",
+                  "kable_aggreg_long.png")
+
+```
+
+## Calculs de statistiques sur un array
+
+```{r, apply vs colMeans}
+w <- array( dim = c(1000, 10, 10) )
+for (i in 1:10) w[, , i] = matrix(rnorm(1000 * 10), ncol = 10)
+a1 <- apply(w, 1:2, mean)
+a2 <- t( colMeans( aperm(w) ) )
+microbenchmark(a1, a2, times = 1000)
+
+apply_test <- function() apply(w, 1:2, mean)
+aperm_test <- function() t( colMeans( aperm(w) ) )
+array <- microbenchmark(apply_test(), aperm_test(), times = 1000)
+(array)
+labels <- c("apply(w, 1:2, mean)", "t( colMeans( aperm(w) ) )")
+boxplot(array, names = labels)
+table_array <- summary(array)
+kable_array <- table_array %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_array.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_array.html",
+                  "kable_array.png")
+
+
+```
+
+aperm := transpose d'un tableau par permutation de dimensions == collection de matrices indexées == tenseur
+
+ici t(colMeans(aperm(x))) est 100 fois plus rapide !
+
+créer des petites fonctions pour les évaluer : les résultats trop bizarres sont dus à la difficulté de mesurer des temps d'execution très courts : <https://stackoverflow.com/questions/41718869/r-microbenchmark-warning-could-not-measure-a-positive-execution-time-for-x-eva>
+
+# Calculs sur des matrices
+
+On compare ici les résultats sur des calculs matriciels dans R sous un angle statistique.
+
+## matrices de distance
+
+En statistique, il est souvent utile de calculer des matrices de distance. L'article écrit qu'il est plus efficient d'utiliser dist(x, ) que as.matrix(dist(x)). C'est critique lorsque la matrice de distance est énorme. Il convient alors de la simplifier.
+
+La méthode efficiente consiste à utiliser la distance de Mahalanobis avec la métrique identité sur la matrice de covariance. La méthode innéficiente consiste à calculer la distance euclidienne et retenir la ligne ou colonne souhaitée.
+
+```{r, Mahalanobis vs distance euclidienne}
+x <- mvrnorm(1, numeric(50), diag( rexp(50, 0.4)))
+y <- mvrnorm(1000, numeric(50), diag( rexp(50, 0.4)))
+a1 <- dist( rbind(x, y)) # méthode innéficiente
+Ip <- diag(50)
+a2 <- mahalanobis( y, center = x, cov = Ip, inverted = TRUE) # méthode efficiente
+z <- y - x
+a3 <- sqrt( colSums(z^2))
+microbenchmark(a1, a2, a3, times = 1000)
+
+test_dist <- function() dist( rbind(x, y))
+test_maha <- function() mahalanobis( y, center = x, cov = Ip, inverted = TRUE)
+test_sqrt <- function() sqrt( colSums(z^2))
+
+distances <- microbenchmark(test_dist(), test_maha(), test_sqrt(), times  = 1000)
+(distances)
+labels <- c("matrice de distance", "distance de Mahalanobis", "colSums")
+boxplot(distances, names = labels)
+table_distances <- summary(distances)
+kable_distances <- table_distances %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_distances.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_distances.html",
+                  "kable_distances.png")
+
+
+```
+
+En évitant les multiplications matricielles et leurs boucles, on gagne un facteur 10.
+
+On voit l'inneficience de la matrice de distance : 52 msec vs 0.1 msec pour sqrt(Z\^2) ! un facteur 500 !
+
+Essayer le truc page 6.
+
+## Multiplier une matrice par un vecteur
+
+on a deux opérateurs possibles : sum(x %*% m) multiplication matricielle sum(m* x)
+
+```{r, multiplication vecteur et matrice}
+x <- mvrnorm(1, numeric(50), diag( rexp(50, 0.4)))
+y <- mvrnorm(1000, numeric(50), diag( rexp(50, 0.4)))
+z <- y - x
+a1 <- sum(z * x)
+a2 <- sum(z %*% x)
+microbenchmark(a1, a2, times = 1000)
+
+test_zx <- function() sum(z * x)
+test_z_mat_x <- function() sum(z %*% x)
+vecmat <- microbenchmark(test_zx(), test_z_mat_x(), times = 1000)
+(vecmat)
+boxplot(vecmat)
+table_vecmat <- summary(vecmat)
+kable_vecmat <- table_vecmat %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_vecmat.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_vecmat.html",
+                  "kable_vecmat.png")
+
+```
+
+On gagne sur le max. Teste sur autre machine.
+
+## calcul d'une matrice des moments tXX:
+
+```{r, produits croisés de matrices}
+X <- matrix(rnorm(10000), nrow = 100, ncol = 100)
+Y <- matrix(rnorm(10000), nrow = 100, ncol = 100)
+a1 <- solve(X) %*% Y
+a2 <- solve(X, Y)
+a3 <- t(X) %*% Y
+a4 <- crossprod(X, Y)
+a5 <- X %*% t(Y)
+a6 <- tcrossprod(X, Y)
+a7 <- t(X) %*% X
+a8 <- crossprod(X)
+microbenchmark(a1, a2, a3, a4, a5, a6, a7, a8)
+test_solve_XY <- function() solve(X) %*% Y
+test_solve_X_Y <- function() solve(X, Y)
+test_tX_Y <- function() t(X) %*% Y
+test_cross <- function() crossprod(X, Y)
+test_X_tY <- function() X %*% t(Y)
+test_tcross <- function() tcrossprod(X, Y)
+test_tXX <- function() t(X) %*% X
+test_cross_X <- function()  crossprod(X)
+matcrossprod <- microbenchmark(test_solve_XY(),
+               test_solve_X_Y(),
+               test_tX_Y(),
+               test_cross(),
+               test_X_tY(),
+               test_tcross(),
+               test_tXX(),
+               test_cross_X())
+(matcrossprod)
+boxplot(matcrossprod, las = 2, xlab = "", cex.axis = 0.75)
+table_matcrossprod <- summary(matcrossprod)
+kable_matcrossprod <- table_matcrossprod %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_matcrossprod.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_matcrossprod.html",
+                  "kable_matcrossprod.png")
+
+
+```
+
+Ecrire tXY dans R par la commande t(X) %\*% Y revient à transposer deux fois.
+
+La fonction crossprod, elle ne fait pas de transposition de matrice.
+
+Comparons :
+
+```{r, crossprod}
+x = matrix(rnorm(100 * 10), ncol = 10)
+a1 = t(x) %*% x
+a2 = crossprod(x)
+microbenchmark(a1, a2)
+test_transp <- function() t(x) %*% x
+test_crossp <- function() crossprod(x)
+microbenchmark(test_transp(), test_crossp())
+```
+
+## inverser par cholesky
+
+Pour inverser des matrices : privilégier les algorithmes rapides tirant partie des propriétés de matrices particulières. Par exemple, privilégier les décompositions de Cholesky, Jordan, etc.
+
+```{r, cholesky}
+x <- matrix( rnorm(100*10), ncol = 10 )
+s <- cov(x)
+a1 <- solve(s)
+a2 <- chol2inv( chol(s) )
+microbenchmark(a1, a2)
+test_solve <- function() solve(s)
+test_chol2inv <- function() chol2inv( chol(s) )
+invchol <- microbenchmark(test_solve(), test_chol2inv())
+(invchol)
+labels = c("pivot", "Cholesky")
+boxplot(invchol)
+table_invchol <- summary(invchol)
+kable_invchol <- table_invchol %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_invchol.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_invchol.html",
+                  "kable_invchol.png")
+
+
+```
+
+## Calculer la trace d'un carré d'une matrice
+
+```{r, trace carré de matrice}
+x <- matrix( rnorm(100*10), ncol = 10 )
+a1 <- sum( diag( crossprod(x) ) )
+a2 <- sum( x^2 )
+a3 <- sum( x * x )
+microbenchmark(a1, a2, a3)
+test_sumcross <- function() sum( diag( crossprod(x) ) )
+test_xsq <- function() sum( x^2 )
+test_sumxx <- function() sum( x * x )
+tracesq <- microbenchmark(test_sumcross(), test_xsq(), test_sumxx())
+(tracesq)
+boxplot(tracesq)
+table_tracesq <- summary(tracesq)
+kable_tracesq <- table_tracesq %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_tracesq.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_tracesq.html",
+                  "kable_tracesq.png")
+
+```
+
+## calculer la trace d'une matrice de moments tXY :
+
+```{r, trace tXY}
+a1 <- sum( diag( crossprod(X, Y) ) )
+a2 <- sum( X * Y )
+microbenchmark( a1, a2 )
+test_tXY_crsprd <- function() sum( diag( crossprod(X, Y) ) )
+test_tXY_sumXY <- function() sum( X * Y )
+tracemom <- microbenchmark(test_tXY_crsprd(), test_tXY_sumXY())
+boxplot(tracemom)
+table_tracemom <- summary(tracemom)
+kable_tracemom <- table_tracemom %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_tracemom.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_tracemom.html",
+                  "kable_tracemom.png")
+
+```
+
+## calculer la diagonale de produit de deux matrices
+
+```{r, diagonale produit croisés}
+a1 <- diag( tcrossprod(X, Y) )
+a2 <- rowSums( X * Y )
+microbenchmark(a1, a2)
+test_diag_tcrs <- function() diag( tcrossprod(X, Y) )
+test_rowSums <- function() rowSums( X * Y )
+diagprodmat <- microbenchmark( test_diag_tcrs(), test_rowSums() )
+boxplot(diagprodmat)
+table_diagprodmat <- summary(diagprodmat)
+kable_diagprodmat <- table_diagprodmat %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_diagprodmat.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_diagprodmat.html",
+                  "kable_diagprodmat.png")
+
+```
+
+## calculs sur deux matrics A, B et un vecteur x
+
+Les méthodes efficientes et inneficientes : tenir compte des propriétés de produits matriciels.
+
+```{r, produit de deux matrices et un vecteur}
+A <- matrix( rnorm(10000), ncol = 100, nrow = 100 )
+B <- matrix( rnorm(10000), ncol = 100, nrow = 100 )
+x <- matrix( rnorm(100), nrow =100)
+a1 <- A %*% B %*% x
+a2 <- A %*% ( B %*% x )
+microbenchmark( a1, a2 )
+test_ABx <- function()  A %*% B %*% x
+test_A_Bx <- function()  A %*% ( B %*% x )
+prodmatvec <- microbenchmark(test_ABx(), test_A_Bx())
+(prodmatvec)
+table_prodmatvec <- summary(prodmatvec)
+kable_prodmatvec <- table_prodmatvec %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_prodmatvec.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_prodmatvec.html",
+                  "kable_prodmatvec.png")
+
+
+```
+
+## utiliser les valeurs propres dans les calculs matriciels
+
+```{r, eigen}
+s  <-  matrix(rnorm( 100 * 100 ), ncol = 100) # matrice 100 * 100
+s  <-  crossprod(s) # produit de tXX
+eig <- eigen(s) # diagonalisation tXX
+vec  <-  eig$vectors
+lam  <-  eig$values
+a1 <- vec %*% diag(lam) %*% t(vec)
+a2 <- vec %*% ( t(vec) * lam)
+microbenchmark(a1, a2)
+test_eig_vec <- function() vec %*% diag(lam) %*% t(vec)
+test_eig_tvec <- function() vec %*% ( t(vec) * lam)
+eigenval <- microbenchmark(test_eig_vec(), test_eig_tvec())
+(eigenval)
+boxplot(eigenval)
+table_eigenval <- summary(eigenval)
+kable_eigenval <- table_eigenval %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_eigenval.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_eigenval.html",
+                  "kable_eigenval.png")
+
+
+```
+
+La seconde option est deux fois plus rapide que la première.
+
+## Importance de la fonction Mahalanobis (bis)
+
+Le terme exponentiel de la loi normale multivariée peut être soit calculée matriciellement soit simplement par la commande **mahalanobis**.
+
+Cetter dernière option est beaucoup plus rapide pour les très grands objets comme on l'a vu précédemment.
+
+```{r, Mahalanobis}
+x <- matrix( rnorm( 1000 * 20 ), ncol = 20)
+m <- colMeans(x)
+n <- nrow(x)
+p <- ncol(x)
+s <- cov(x)
+a1 <- diag( (x - rep(m, rep(n, p)) ) %*% solve(s) %*% t(x - rep(m, rep(n, p)) ) )
+a2 <- diag( t( t(x) - m)  %*% solve(s) %*% (t(x) - m) )
+a3 <- mahalanobis(x, m, s)
+microbenchmark(a1, a2, a3)
+test_mvn_xrep <- function() diag( (x - rep(m, rep(n, p)) ) %*% solve(s) %*% t(x - rep(m, rep(n, p)) ) )
+test_mvn_tx <- function() diag( t( t(x) - m)  %*% solve(s) %*% (t(x) - m) )
+test_mvn_maha <- function() mahalanobis(x, m, s)
+mahala <- microbenchmark(test_mvn_xrep(), test_mvn_tx(), test_mvn_maha())
+(mahala)
+boxplot(mahala)
+table_mahala <- summary(mahala)
+kable_mahala <- table_mahala %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_mahala.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_mahala.html",
+                  "kable_mahala.png")
+
+```
+
+Notez la vitesse de Mahalanobis \> 20 fois plus rapide !!!
+
+# optimisation numérique ----
+
+# Comparaison Rfast et fonctions
+
+Paquetages efficients : glmnet, speedglm, matrixStats, geneFilter, quantreg.
+
+La difficulté est qu'avec 24 000 paquetages enregistrés dans le CRAN, il faut longuement chercher et comparer les fonctions pour choisir les plus adaptées à ses besoins propres en terme d'ergonomie et de vitesse.
+
+C'est ce qui a motivé la création de Rfast : proposer des fonctions vraiment très rapides avec un spectre d'utilisations très larges.
+
+## test du G² sur facteurs
+
+```{r, G² test Rfast}
+nvalues <- 3 ; nvars <- 100 ; nsamples <- 10000
+data <- matrix( sample( 0:(nvalues
+                           -1), nvars * nsamples, replace = TRUE), nsamples, nvars)
+dc <- rep(nvalues, nvars)
+ela <- function(data) {
+  p <- dim(data)[2]
+  for (i in 1:(p - 1) ) {
+    for (j in (i + 1 ):p ) { chisq.test(data[,i], data[,j]) }
+  }
+}
+test_g2_Rfast <- microbenchmark(g2Test_univariate(data=data, dc = dc), ela(data))
+(test_g2_Rfast)
+boxplot(test_g2_Rfast)
+table_test_g2_Rfast <- summary(test_g2_Rfast)
+kable_test_g2_Rfast <- table_test_g2_Rfast %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_g2_Rfast.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_g2_Rfast.html",
+                  "kable_test_g2_Rfast.png")
+
+```
+
+g2Test_univariate est 900 fois plus rapide que ela() !
+
+## tests F en colonnes
+
+```{r, test F en colonne}
+x <- matrix( rnorm(500 * 10000), ncol = 10000)
+ina <- rbinom(500, 3, 0.5) + 1 ; ina2 <- as.factor(ina)
+test_col_F <- microbenchmark(ftests(x, ina), ftests(x, ina2))
+(test_col_F)
+boxplot(col_F)
+table_test_col_F <- summary(test_col_F)
+kable_test_col_F <- table_test_col_F %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_col_F.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_col_F.html",
+                  "kable_test_col_F.png")
+```
+
+## regression univariée avec predicteurs continus
+
+```{r, regression univariée}
+y <- rnorm(1000)
+x <- matrix(rnorm(1000 * 10000), ncol = 10000)
+ela2 <- function(y, x) {
+  p <- dim(x)[2]
+  for(i in 1:p) lm.fit( cbind(1, x[,i] ), y)
+}
+test_reguniv <- microbenchmark(univglms(y, x), ela2(y, x))
+(test_reguniv)
+boxplot(test_reguniv)
+table_test_reguniv <- summary(test_reguniv)
+kable_test_reguniv <- table_test_reguniv %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_reguniv.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_reguniv.html",
+                  "kable_test_reguniv.png")
+```
+
+## calculs de médianes sur différents vecteurs avec median et med
+
+```{r, médianes de vecteurs}
+x <- rnorm(100)
+y <- rnorm(1000)
+z <- rnorm(10000)
+w <- rnorm(100000)
+test_medians <- microbenchmark(median(x),
+                           med(x),
+                           median(y),
+                           med(y),
+                           median(z),
+                           med(z),
+                           median(w),
+                           med(w))
+boxplot(test_medians, cex.axis = 0.75, xlab = "")
+(test_medians)
+table_test_medians <- summary(test_medians)
+kable_test_medians <- table_test_medians %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_medians.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_medians.html",
+                  "kable_test_medians.png")
+```
+
+## médianes colonnes de matrices
+
+```{r, médianes colonnes}
+X <- matrix( rnorm(100 * 10), ncol = 10 )
+Y <- matrix( rnorm(1000 * 10), ncol = 10 )
+Z <- matrix( rnorm(1000 * 100), ncol = 100 )
+W <- matrix( rnorm(10000 * 100), ncol = 100 )
+test_colmedians <- microbenchmark(Rfast::colMedians(X), 
+               Rfast::colMedians(Y), 
+               Rfast::colMedians(Z), 
+               Rfast::colMedians(W),
+               matrixStats::colMedians(X),
+               matrixStats::colMedians(Y),
+               matrixStats::colMedians(Z),
+               matrixStats::colMedians(W)
+               )
+(test_colmedians)
+boxplot(test_colmedians, las = 2, cex.axis = 0.75, xlab = "")
+table_test_colmedians <- summary(test_colmedians)
+kable_test_colmedians <- table_test_colmedians %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_colmedians.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_colmedians.html",
+                  "kable_test_colmedians.png")
+```
+
+## médianes spatiales avec ICSNP et Rfast
+
+```{r, médianes spatiale 100}
+x <- matrix(rnorm(100 * 10), ncol = 10)
+test_spat_medians <- microbenchmark(
+  Rfast = spat.med(x),
+  ICSNP_1 = spatial.median(x, init = NULL, maxiter = 500, eps = 1e-09, print.it = FALSE, na.action = na.fail), 
+  ICSNP_2 = spatial.median(x, init = colMedians(x), maxiter = 500, eps = 1e-09, print.it = FALSE, na.action = na.fail)
+)
+(test_spat_medians)
+boxplot(test_spat_medians, xlab = "")
+table_test_spat_medians <- summary(test_spat_medians)
+kable_test_spat_medians <- table_test_spat_medians %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_spat_medians.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_spat_medians.html",
+                  "kable_test_spat_medians.png")
+
+```
+
+```{r, médianes spatiale 1000}
+x <- matrix(rnorm(1000 * 10), ncol = 10)
+test_spat_medians2 <- microbenchmark(
+  Rfast = spat.med(x),
+  ICSNP_1 = spatial.median(x, init = NULL, maxiter = 500, eps = 1e-09, print.it = FALSE, na.action = na.fail), 
+  ICSNP_2 = spatial.median(x, init = colMedians(x), maxiter = 500, eps = 1e-09, print.it = FALSE, na.action = na.fail)
+)
+(test_spat_medians2)
+boxplot(test_spat_medians2)
+table_test_spat_medians2 <- summary(test_spat_medians2)
+kable_test_spat_medians2 <- table_test_spat_medians2 %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_spat_medians2.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_spat_medians2.html",
+                  "kable_test_spat_medians2.png")
+```
+
+```{r, médianes spatiale 10000}
+x <- matrix(rnorm(10000 * 10), ncol = 10)
+test_spat_medians3 <- microbenchmark(
+  Rfast = spat.med(x),
+  ICSNP_1 = spatial.median(x, init = NULL, maxiter = 500, eps = 1e-09, print.it = FALSE, na.action = na.fail), 
+  ICSNP_2 = spatial.median(x, init = colMedians(x), maxiter = 500, eps = 1e-09, print.it = FALSE, na.action = na.fail)
+)
+(test_spat_medians3)
+boxplot(test_spat_medians3)
+table_test_spat_medians3 <- summary(test_spat_medians3)
+kable_test_spat_medians3 <- table_test_spat_medians3 %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_spat_medians3.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_spat_medians3.html",
+                  "kable_test_spat_medians3.png")
+```
+
+```{r, idem mais à partir exemple de spatial.median 100}
+set.seed(654321)
+cov.matrix <- matrix(c(3,2,1,2,4,-0.5,1,-0.5,2), ncol=3)
+X <- rmvnorm(100, c(0,0,0), cov.matrix)
+test_spat_medians4 <- microbenchmark(ICSNP = spatial.median(X), Rfast = spat.med(X))
+(test_spat_medians4)
+boxplot(test_spat_medians4)
+table_test_spat_medians4 <- summary(test_spat_medians4)
+kable_test_spat_medians4 <- table_test_spat_medians4 %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_spat_medians4.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_spat_medians4.html",
+                  "kable_test_spat_medians4.png")
+```
+
+```{r, idem mais à partir exemple de spatial.median 1000}
+set.seed(654321)
+cov.matrix <- matrix(c(3,2,1,2,4,-0.5,1,-0.5,2), ncol=3)
+X <- rmvnorm(1000, c(0,0,0), cov.matrix)
+test_spat_medians5 <- microbenchmark(ICSNP = spatial.median(X), Rfast = spat.med(X))
+(test_spat_medians5)
+boxplot(test_spat_medians5)
+table_test_spat_medians5 <- summary(test_spat_medians5)
+kable_test_spat_medians5 <- table_test_spat_medians5 %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_spat_medians5.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_spat_medians5.html",
+                  "kable_test_spat_medians5.png")
+
+```
+
+```{r, idem mais à partir exemple de spatial.median 10000}
+set.seed(654321)
+cov.matrix <- matrix(c(3,2,1,2,4,-0.5,1,-0.5,2), ncol=3)
+X <- rmvnorm(10000, c(0,0,0), cov.matrix)
+test_spat_medians6 <- microbenchmark(ICSNP = spatial.median(X), Rfast = spat.med(X))
+(test_spat_medians6)
+boxplot(test_spat_medians6)
+table_test_spat_medians6 <- summary(test_spat_medians6)
+kable_test_spat_medians6 <- table_test_spat_medians6 %>% 
+      kbl(escape = FALSE,
+      digits = c(0, 0, 0, 0, 0, 0, 0, 0, 0),
+      html_font = "Dejavu",
+      format = 'html',
+      col.names = c("Expression", "min", "1er quartile", "moyenne", "médiane",
+                    "3e quartile", "max", "nombre de tests", "cld")) %>%
+  kable_styling(full_width = F,
+                html_font = "Dejavu",
+                position = "center",
+                font_size = 24) %>% 
+  kable_styling(bootstrap_options =
+                  c("condensed","striped", "hover", "responsive")) %>%
+  footnote(general_title = "Source : d'après Tsagris & alii",
+           general = "En microsecondes") %>%
+  save_kable("kable_test_spat_medians6.html")
+
+options(chromote.headless = "new")
+
+webshot2::webshot("kable_test_spat_medians6.html",
+                  "kable_test_spat_medians6.png")
+
+```
