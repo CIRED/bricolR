@@ -1,0 +1,12 @@
+à lire :
+https://www.tandfonline.com/doi/abs/10.1080/17421772.2019.1615634?journalCode=rsea20
+
+Supplément:
+https://laurae2.github.io/LauraeDS/
+https://github.com/Laurae2/Laurae
+https://rdrr.io/github/Laurae2/LauraeParallel/
+
+
+https://ieeexplore.ieee.org/document/4767189
+https://rpubs.com/juanhklopper/cross_entropy
+https://search.r-project.org/CRAN/refmans/FNN/html/crossentropy.html

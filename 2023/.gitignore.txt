@@ -1,0 +1,30 @@
+# pdf
+*.pdf
+
+# MAC OS
+._.*.*
+
+# shapefile 
+*.ods
+*.prj
+*.shp
+*.shx
+
+# images
+*.emf
+*.gif
+*.png
+*.bmp
+
+# Excel
+*.xls*
+*.csv
+
+# powerpoint
+*.ppt
+
+# ziparchives
+*.rar
+
+
+
