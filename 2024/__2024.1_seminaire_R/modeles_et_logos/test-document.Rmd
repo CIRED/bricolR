@@ -1,0 +1,13 @@
+---
+title: "Test Note de travail Cired"
+author: "Franck"
+date: "2023-09-27"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# titre 1
+Le document commence ici

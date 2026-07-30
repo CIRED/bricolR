@@ -1,0 +1,120 @@
+---
+title: "Document html pour bricole'R 2024.2 : table des matières-2"
+author: "Franck Nadaud"
+date: "2024-02-19"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+                      echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE
+)
+```
+
+```{r, choix du thème et chargement libraries, include = TRUE, echo = FALSE}
+library(magrittr) 
+library(gapminder)
+library(tidyverse)
+theme_set(theme_bw()) # attention theme_set() doit être appelé après tidyverse
+library(SmartEDA)
+library(RColorBrewer)
+library(ggthemes)
+library(ggpubr)
+library(broom)
+library(broom.helpers)
+library(estimatr) # proc?dures d'estimation optimis?es
+library(AER) # paquetage d'?conom?trie complet
+library(olsrr) # suite compl?te d'estimations et tes avec ols 
+# https://olsrr.rsquaredacademy.com/index.html
+library(mctest) # paquetage complet de diagnostics de colin?arit?
+(.packages())
+```
+
+```{r, importation des données, include = TRUE, echo = FALSE}
+gapmind_2007_19 <- readRDS("gapmind_2007_19.rds")
+```
+
+# graphiques du GDI et du PIB per capita
+
+## habillage des pays par un facteur
+
+```{r, lien gdi et indicateurs par tête, include = TRUE, echo = FALSE}
+ggplot(gapmind_2007_19,
+       aes(x = log(gni_2019/pop_2019),
+           y = log(gdi_2019))) +
+  geom_point(aes(color = hdi_class,
+                 shape = hdi_class)) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(title = "Relation entre gni per capita et gdi en 2019",
+       subtitle = "Echelles logarithmiques",
+       x = "log du gni per capita",
+       y = "log du gdi 2019",
+       caption = "Source: ONU WDI, 2020",
+       color = "Classe d'HDI") +
+  scale_color_discrete(name = "Classe d'HDI",
+                       labels = c("High", "Low", "Medium", "Unclassified", "Very High", NULL)) +
+  scale_shape_discrete(name = "Classe d'HDI",
+                       labels = c("Haute", "Basse", "Moyenne", "Non classifiée", "Très haute",  NULL))
+```
+
+## avec facettes
+
+```{r, graphique en facettes}
+ggplot(gapmind_2007_19,
+       aes(x = log(gni_2019/pop_2019),
+           y = log(gdi_2019))) +
+  geom_point(aes(color = hdi_class,
+                 shape = continent)) +
+  facet_wrap(~ continent, ncol = 3, nrow = 2) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(title = "Relation entre gni per capita et gdi en 2019",
+       subtitle = "Echelles logarithmiques",
+       x = "log du gni per capita ", y = "log du gdi 2019",
+       caption = "Source: ONU WDI, 2020",
+       color = "Classe d'HDI") +
+  scale_color_discrete(name = "Classe d'HDI",
+                       labels = c("Haute", "Basse", "Moyenne", "Non classifiée", "Très haute",  NULL)) +
+  scale_shape_discrete(name = "Continent",
+                       labels = c("Afrique", "Amérique", "Asie", "Europe", "Océanie", NULL))
+```
+
+# Modèles
+
+## modèle 1 : mco log(gdi) \~ log(gni/pop)
+
+```{r, modèle 1}
+mco1 <- lm(log(gdi_2019) ~ log(gni_2019/pop_2019),
+           data = gapmind_2007_19)
+summary(mco1)
+plot(mco1, 1:6)
+```
+
+## modèle 2 : mco log(gdi) \~ log(gdp/pop)
+
+on peut utiliser des commandes base R et tidyverse dans un appel de lm():
+
+```{r, modèle 2, rows.print = 50}
+# on filtre les NAs sur la dépendante log(gdi)
+mco2 <- lm(log(gdi_2019) ~ log(gdp_percap), 
+           data = filter(gapmind_2007_19, !is.na(gapmind_2007_19$gdi_2019)))
+smco2 <- summary(mco2)
+# ici on a filtré des NA par la négation !is.na(x)
+# summary(nom_modèle) permet d'afficher plus de résultats
+# utilisons les valeurs de gdp_percap pour pr?dire les NAs de gdi_2019
+gdipred2  <-  gapmind_2007_19 %>% filter(is.na(gapmind_2007_19$gdi_2019))
+names(gdipred2)
+glimpse(gdipred2)
+# prediction sur les gdi filtrés
+yhat.mco2 <- predict(mco2, gdipred2)
+yhat.mco2
+# prediction avec la commande fortify()
+head(fortify(mco2), 25)
+```
+
+

@@ -1,0 +1,204 @@
+---
+title: "An OECD-like Equivalence scale in China"
+author: "Jun Xie and Franck Nadaud"
+date: "2024-12-01"
+output: 
+  word_document:
+    reference_docx: word-styles-reference-01.docx
+---
+
+```{r setup, include=FALSE, encoding = "latin 1"}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Cired working paper 2024 -
+
+An OECD-like equivalence scale for chinese households
+
+Synopsis: we present a method to estimate an OECD-like equivalence scale from Chinese household survey data
+
+# Introduction:
+
+The Climate Change challenge is hardly the most important of the current century, if not of the whole human history. It is well known that early action which open the most options on the emission trajectories are the least costly. The complexity of interdependent processes in time, space and scales imposes to consider all aspects of human activity, in particular the needs and wants of people. This is especially important as the needs and wants of humans condition what is produced, how and where it is marketed, especially in the light of equity and in a context of unequal development. Thus, the challenge of Climate Change is compounded by the Challenge of development and poverty alleviation. One cannot consider to neglect development for the sake of Climate Change. The question is particularly accute in emerging countries, and singularly in China, the greatest of them. With 1.3 billion inhabitants and a two digit growth since nearly 40 years China's needs are fastly growing as showed by the per capita GDP. The fast increase in the standard of living of Chinese households motivate a careful study of consumption patterns and the rapid change in lifestyles chinese households experience. We recall that consumption patterns change with development stages and also across space and lifestages both for individuals and for households. The notion of equivalence scale is one of the oldest concepts of economic analysis as it was proposed as soon as 1789 in England[^1]. The relation between budget share and income was empirically formulated by Engel (1865) on food expenditures of Belgian worker households. The Engel curve description of consumption was proposed by Working (1943) and Leser (1963 ?) as a general empirical framework of consumption analysis. The vast litterature on household consumption analysis emphasizes the relationship between household composition and the structure of expenditures measured as budget shares. These relationships show wide variation across time, space, cultures but also much common patterns across sociodemographic variables. These may be simplified into household composition according to age distinguishing adults from children. This is the rationale of the first Oxford equivalence scale [^2], which was followed by the OECD equivalence scale at the turning of 2000 years. We propose in this paper to estimate an OECD-like equivalence scale from Chinese households survey data. The paper is organized in this way: first the theory behind the proposed equivalence scale, followed by the context of the project, then we present the proposed method, then the data followed by the results. We discuss the results then we conclude.
+
+[^1]: find exact ref
+
+[^2]: ref
+
+# Equivalence scales theory and empirical practices
+
+It is well known that households differ in many aspects describing their characteristics. The most obvious being size, sexes, ages, education levels among the many others of which are tastes. We thus expect to see variation in consumption patterns with households characteristics [main ref: Deaton & Muellbauer, 1980].
+
+This motivates to study demand variation not only across income and prices but those diverse characteristics of households. This dictates to use readily observable characteristics such as the type of household, number of persons, ages and sexes of members, diplomas, marital status, that is, any recordable characteristic at an acceptable cost in a study. Apart from ignoring the matter, the most straightforward way is to deflate total income, expenditure and consumption by size. This implies that, for a given household size, consumption is the same function of expenditures and prices for all households of this same size.
+
+The litterature on households characteristics was motivated by the search for welfare comparisons across households, a possibility given the acceptance of behaviorial comparisons in per capita terms. But as DM(1980) recall, one must keep in mind that such an hypothesis implies that identical behavior implies identical welfare. This leads to the idea of employing index numbers to measure welfare across households, these index numbers are called equivalence scales. Equivalence scales are in a relationship of duality with cost-of-living indexes. That is, cost-of-living indexes compare the effect of different prices on a given household type while equivalence scales compare welfare across different type of households. Moreover, equivalence scales suppose that differences in tastes arise from differences in characteristics much in the same way as cost-of-living indexes suppose invariance of tastes.
+
+The sources of variation accountable to households characteristics are multiple, and some are obvious, like age group, with different needs at different stages of life: babies, children, adolescents, adults and elders. On other source of variation in consumption given characteristics is related to collective consumption. The presence of scale economies arises from the mutualisation of services provided by equipement of the household : be it lighting, heating, cooling, refrigeration, TV and the like. This must be contrasted with personnal consumption, that cannot be mutualized. In all these respects equivalence scales are deflators that allow to correct consumption on a need-corrected basis, as such they are more precise than per capita indicators.
+
+This is why equivalence scales are so useful in policy especially welfare and poverty measurement. These policies require precise assessment of needs according to household composition, and thus measurement of the poverty lines requirements.
+
+The litterature on equivalence scales has a long history generally starting with Engle's study of belgian worker household food consumption (1895), the first known empirical investigation of the relationship on consumption patterns with household composition. Many important surveys exist [quote, Brown & Deaton, (1972), Prais & Houthakker (1955)].
+
+The general idea it that we can define a function with DE1980 notation:
+
+$$
+m^{h} = m(a^{h})
+$$
+
+This function expresses the minimum expenditure to maintain a household expressed in equivalent of single adult. The function depends only on households characteristics vector $a^{h}$ . The characteristics vector may be any observable.
+
+Historically, much empirical work has been done on households food needs [quote many old articles from economics and sociology in the US and Europe.] often distinguishing needs by sex and age in yearly steps. A vast amount of such litterature exists since Engle pioneering article (1895) and up the Stone Linear Expenditure System and Amsterdam scale (1954).
+
+The explicit assumption behind equivalence scale as index numbers is that one compute demand throug cost functions as a function of reference demand (cost for single adult), thus:
+
+$$
+c^{h}(u^{h},p,a^h)=m(a^h)c(u^h,p)=x^h
+$$
+
+where $c(u,p)$ is the reference (per capita, i.e. single adult) reference cost function. Indirect utility function is similarly defined with the equivalence scale weighting explicitly the quantities, we have:
+
+$$
+u^h=v^h(q^h,a^h)=v(q^h/m(a^h))=v(q^{h*})
+$$
+
+with $q_i^{h*}=q_i^h/m(a^h)$ where the per capita demand functions have the form:
+
+$$
+q_i^h/m(a^h)=g_i(x^h/m(a^h),p)
+$$
+
+so that is in budget share:
+
+$$
+w_i^h=\cfrac{p_iq_i^h}{x^h}=\cfrac{p_ig_i(x^h/m(a^h),p)}{x^h/m(a^h)}
+$$
+
+We shall stress that it is a function of $x^h/m(a^h)$. That means if $h$ is a household with characteristic $a^h$ and if $k$ is the reference household for which $m(a^k)=1$ and if $h$ and $k$ have the same budget share, then we must have:
+
+$$
+\frac{x^h}{m(a^k)}=\frac{x^k}{m(a^k)}=x^k
+$$
+
+that is, $m(a_h)=x^h/x^k$.
+
+The rationale of the equivalence scale is rather simple: an equivalence scale is a vector of weights associated to different characteristics of households, of which are generally found age groups, marital status, sex and diplomas and possibly many other relevant characteristics.
+
+These weights are used as deflators of the household income or consumption expenditures, they allow to express patterns in adult-equivalent. This statement means that, if the equivalence scale for a household of size $N$ and income $R$ is $m(N)$, then this household has the same standard of living as a single adult with with income $R/m(N)$. This single adult is the reference with the equivalence scale equal to 1.
+
+The rationale behind this is to assess the needs of a household of given composition and characteristics to the needs of a single adult. A more precise measure would be to relate the costs of achieving the given needs and utility levels. In this case, the scale would be $C(U,N)/C(U,1)$ that is the ratio of the cost function of a household of size $N$ to that of a single adult with the same utility level, $U$. As stated before, one must assume the direct relation from behavior to welfare, that we do without discussion.
+
+The economies of scale in households consumption appear driven by the distinction between personal and collective consumption. Obviously, a personal good is consumed by one member of the household, these are the case, among others of clothing, medecine, a place of cinema or a piece of cake. Collective consumption arise from the services provided to all members of the household by some equipment or device: the fridge, a garnment cabinet, the dish washer, lighting, cooling or heating. Some equipments are in an intermediary position as they are collective in essence but can only be used by one person at the same time (for example, the iron, a toilet), however we consider all such cases as collective consumption goods . Let us consider a model where a the members of the household consume one personal good and one
+
+Here we discuss common knowledge theory motivating equivalence scales. This can be simplified but it seems interesting to recall the main topics and computations leading to OECD-like equivalence scales.
+
+Perhaps here we can fully motivate the simplifications leading to the reduction to household composition by adults / children.
+
+[I can manage this part fully]
+
+[here discuss concave and convex equivalence scales : the concave scale is the easiest to estimate as it supports the number of children in levels, while the convex scale see it in logs, posing estimation problems]
+
+# The context of the project : motivation for an OECD-like equivalence scale for China
+
+Here Jun you can introduce your work and the objectives of your investigations. In effect this is here your job.
+
+I propose two subsections
+
+## broader context of the project
+
+here you expose the broader project of your thesis and the need to model chinese household consumption.
+
+## The data: chinese household surveys
+
+Here again this is your part. You can present the chinese households survey data and the choices made to do the equivalence scale.
+
+# The estimation methodology
+
+Here we present the methodology proposed from the French Hourriez & Ollier (1997) paper.
+
+The proposed methodology is designed to estimate an OECD-like equivalence scale, that is, a weighting scheme taking into account household composition by age, more precisely adults and children. We recall that the Oxford Equivalence scale [find ref] is given by the triple (1, 0.7, 0.5) where 1 is the weight of the first adult, the household head, 0.7 for extra adults and 0.5 for children where adults persons of at least 15 years. The OECD scale proposed at the turning of the 21^st^ century with a triple of weights (1, 0.5, 0.3). Notice that we are interested by an average equivalence scale for all of mainland China. Thus, we do not take into account specific groups of the chinese population as we are interested primarily on the average behavior of the chinese households.
+
+This equivalence is straightforward to estimate in a two step process. A first step consist in estimation of the relative cost ratio of children to adults. Then one define a correction of the household size to regularize the final estimation of the coefficients entering into the OECD-like equivalence scale.
+
+The model is estimable on objective quantitative data and subjective qualitative data. The former is derived from the observed survey data in expenditures, budget shares and income ; the latter is generally an ordered catagorical variable from a question asked to the surveyed households about their perceived standard of living. In the objective model the dependent is then the budget share of the considered consumption item and in the subjective model the categories of the living standard question. The estimators are then the standard OLS estimator for the objective model and the ordered logit estimator for the subjective model.
+
+In this note we estimate the objective model on chinese household survey data. We estimate the concave scale model as it is more straightforward because the expenditures are in logs but the number of adults and children appear in levels. The master equation estimated is thus:
+
+$$
+w_i=a+b.ln(X_i)+c.A_i+d.K_i+\Sigma_k\gamma_k.g_k+\epsilon_i
+$$
+
+were index $i$ designate households: $w_i$ is the share for the current given consumption item $X_i$ is total expenditure, $A_i$ and $K_i$ respectively the number of adults and children (kids), with respective costs $c$ for adults and $d$ for children and where $g_k$ are socioeconomic characteristics of households whose coefficients are $\gamma_k$, $\epsilon_i$ is the residual term.
+
+The equation needs a careful selection of two important topics: first the cutoff age between adults and kids and second, the reference category of households characteristics that are represented by the constant. The age cutoff for China has been set to 18 years [confirm] while the reference category is summed up in the annexes.
+
+In the convex equivalence scale, the number of adults and kids enters in log form. This implies a more complex estimation method involving a censored regression step in order to take into account the lower censoring of zero kids households.
+
+The convex scale implies decreasing costs of extra persons and increasing costs for the concave scale. Both specifications are possible, and their comparison is a mean to measure the economies of scales from collective consumption in households. [add refs and maybe a remark for China]
+
+In all equivalence scales Equation (1) is an intermediate step to compute the relative cost of kids to adults, that is $rc = d / c$. The relative cost is computed in order to derive the corrected household size, that is :
+
+$$
+N_i = A_i+rc.K_i
+$$
+
+where $N_i$ is the age-corrected household size differing from $H_i$ the observed household size. This age correction of size is a statistical correction allowing more accurate estimates of relevant parameters. [find the ref introducing this !]. One could compare age-corrected estimates to direct estimates of the master equation (1). Notice also that the relative cost $rc$ could be obtained by a grid search over an interval with constant steps. Here, we consider only the direct estimation in the two step model.
+
+In the second step, we estimate the following equation:
+
+$$
+w_i=a+b.ln(X_i)+c.N_i+\Sigma_k\gamma_k.g_k+\epsilon_i
+$$
+
+in order to derive the scale parameter of the adjusted equivalence scale:
+
+$$
+A = exp(-c/b)
+$$
+
+This parameter gives the expression of the convex equivalence scale, that is:
+
+$$
+E_i = A^{N_i - 1}
+$$
+
+Notice we use the age-corrected size as exponent of the intermediary equivalence scale. Next we linearize this expression by regression of this adjusted equivalence scale on the corrected size, thus we compute the regression:
+
+$$
+E_i = a + e.N_i 
+$$
+
+Here, e is the final coefficient we need to compute the weights of the OECD-like equivalence scale we need.
+
+The final equivalence scale is then given by the following equation:
+
+$$
+E_i = 1 + e.(A_i - 1) + e.rc.(K_i) 
+$$
+
+The triple $(1, e, e.rc)$ constitute the final coefficients of the equivalence scale. One needs to apply them as into the preceding equation with observed data not forgetting to substract one the number of adults to avoid double counting of the household head whose coefficient is 1.
+
+One may consider to estimate different equivalence scales for different groups of consumption. In this case, an average scale may be agregated by computing the weighted average of the individual items weighted by budget shares. Another possibility is to estimate equivalences scales by item as a system, for example, like the Rotbarth or Barten systems. In this paper we only considered a single non food equivalence scale as more adaptated to the current chinese households context. [We can leave that for further research in the conclusion.]
+
+# 
+
+# The results
+
+Here we present results of econometric estimation of the equivalence scale
+
+# Discussion of the results
+
+Well we discuss from your perspective and the broader landscape of chinese consumption analysis. Perhaps this may be included in the conclusion but I think this would weaken your contribution to this important question as this opens many perspectives. [A very interesting line of research for China would be to study the cost of children in the context of a rapid transformation and growth in China. Another could be to study spectific groups of the population, as need arise]
+
+# Conclusion
+
+Here we conclude, we must be careful as this will be most read, the coefficients for extra adults / children must appear here I think. [check here if we propose the system estimations, wiz: ]
+
+# references
+
+When were are ok we add references in the text.
+
+# annexes
+
+as needed here ? nomenclatures, the full detail of consumption items, some detail about chinese hh survey.
+
+Present here the reference category for estimated equations.

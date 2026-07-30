@@ -1,0 +1,196 @@
+---
+title: "An OECD-like Equivalence scale in Algeria"
+author: "Franck Nadaud + ONS authors"
+date: "2024-12-01"
+output: 
+  word_document:
+    reference_docx: word-styles-reference-01.docx
+---
+
+```{r setup, include=FALSE, encoding = "latin 1"}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Document de travail du Cired 2024 -
+
+Une échelle d'équivalence de type OCDE pour les ménages algériens
+
+Synopsis : Nous présentons une méthode d'estimation d'une échelle d'équivalence de type OCDE à partir des données d'une enquête sur les ménages algériens.
+# Introduction :
+
+Le défi du changement climatique est sans doute le plus important de ce siècle, voire de toute l'histoire de l'humanité. Il est bien connu que les actions précoces qui ouvrent le plus d'options sur les trajectoires d'émissions sont les moins coûteuses. La complexité des processus interdépendants dans le temps, l'espace et les échelles impose de prendre en compte tous les aspects de l'activité humaine, en particulier les besoins et les souhaits des populations. Ceci est d'autant plus important que les besoins et les désirs des humains conditionnent ce qui est produit, comment et où c'est commercialisé, surtout à la lumière de l'équité et dans un contexte de développement inégal. Ainsi, le défi du changement climatique est aggravé par le défi du développement et de la réduction de la pauvreté. On ne peut envisager de négliger le développement au profit du changement climatique. La question se pose avec une acuité particulière dans les pays émergents, et singulièrement en Algérie, le plus grand d'entre eux. Avec 1,3 milliard d'habitants et une croissance à deux chiffres depuis près de 40 ans, les besoins de l'Algérie augmentent rapidement, comme le montre le PIB par habitant. L'augmentation rapide du niveau de vie des ménages algériens justifie une étude approfondie des modes de consommation et de l'évolution rapide des modes de vie des ménages algériens. Nous rappelons que les modes de consommation évoluent en fonction des stades de développement, ainsi qu'à travers l'espace et les étapes de la vie, tant pour les individus que pour les ménages. La notion d'échelle d'équivalence est l'un des concepts les plus anciens de l'analyse économique puisqu'elle a été proposée dès 1789 en Angleterre[^].
+
+La relation entre la part du budget et le revenu a été formulée empiriquement par Engel (1865) sur les dépenses alimentaires des ménages ouvriers belges. La description de la consommation par la courbe d'Engel a été proposée par Working (1943) et Leser (1963 ?) comme cadre empirique général de l'analyse de la consommation. La vaste littérature sur l'analyse de la consommation des ménages met l'accent sur la relation entre la composition du ménage et la structure des dépenses mesurées en termes de parts de budget. Ces relations présentent de grandes variations dans le temps, l'espace et les cultures, mais aussi des schémas communs aux variables sociodémographiques. Elles peuvent être simplifiées en composition des ménages en fonction de l'âge, en distinguant les adultes des enfants. C'est la raison d'être de la première échelle d'équivalence d'Oxford [^2], qui a été suivie par l'échelle d'équivalence de l'OCDE au tournant des années 2000. Nous proposons dans cet article d'estimer une échelle d'équivalence semblable à celle de l'OCDE à partir des données de l'enquête sur les ménages algériens. L'article est organisé de la manière suivante : nous présentons d'abord la théorie qui sous-tend l'échelle d'équivalence proposée, puis le contexte du projet, nous présentons ensuite la méthode proposée, puis les données et enfin les résultats. Nous discutons les résultats, puis nous concluons.
+
+[^1]: find exact ref
+
+[^2]: ref
+
+# Théorie des échelles d'équivalence et pratiques empiriques
+
+Il est bien connu que les ménages diffèrent par de nombreux aspects décrivant leurs caractéristiques. Les plus évidents sont la taille, le sexe, l'âge, le niveau d'éducation et bien d'autres encore, comme les goûts. Nous nous attendons donc à ce que les modèles de consommation varient en fonction des caractéristiques des ménages [référence principale : Deaton & Muellbauer, 1980].
+
+Cela nous incite à étudier les variations de la demande non seulement en fonction des revenus et des prix, mais aussi en fonction des diverses caractéristiques des ménages. Cela impose d'utiliser des caractéristiques facilement observables telles que le type de ménage, le nombre de personnes, l'âge et le sexe des membres, les diplômes, la situation matrimoniale, c'est-à-dire toute caractéristique enregistrable à un coût acceptable dans le cadre d'une étude. Outre le fait d'ignorer la question, la méthode la plus simple consiste à déflater le revenu total, les dépenses et la consommation en fonction de la taille du ménage. Cela implique que, pour une taille de ménage donnée, la consommation est la même fonction des dépenses et des prix pour tous les ménages de cette même taille.
+
+La littérature sur les caractéristiques des ménages a été motivée par la recherche de comparaisons de bien-être entre les ménages, une possibilité étant donné l'acceptation de comparaisons comportementales en termes de per capita. Mais comme le rappelle DM (1980), il faut garder à l'esprit qu'une telle hypothèse implique qu'un comportement identique implique un bien-être identique. D'où l'idée d'utiliser des indices pour mesurer le bien-être entre les ménages, ces indices étant appelés échelles d'équivalence. Les échelles d'équivalence sont en relation de dualité avec les indices du coût de la vie. En d'autres termes, les indices du coût de la vie comparent l'effet de différents prix sur un type de ménage donné, tandis que les échelles d'équivalence comparent le bien-être entre différents types de ménages. En outre, les échelles d'équivalence supposent que les différences de goûts découlent des différences de caractéristiques, de la même manière que les indices du coût de la vie supposent l'invariance des goûts.
+
+Les sources de variation imputables aux caractéristiques des ménages sont multiples, et certaines sont évidentes, comme le groupe d'âge, avec des besoins différents à différents stades de la vie : bébés, enfants, adolescents, adultes et personnes âgées. Une autre source de variation de la consommation en fonction des caractéristiques est liée à la consommation collective. La présence d'économies d'échelle découle de la mutualisation des services fournis par les équipements du ménage : éclairage, chauffage, refroidissement, réfrigération, télévision, etc. Ceci est à mettre en parallèle avec la consommation personnelle, qui ne peut être mutualisée. À tous ces égards, les échelles d'équivalence sont des déflateurs qui permettent de corriger la consommation en fonction des besoins, et elles sont donc plus précises que les indicateurs par habitant.
+
+C'est pourquoi les échelles d'équivalence sont si utiles dans les politiques, en particulier dans la mesure du bien-être et de la pauvreté. Ces politiques nécessitent une évaluation précise des besoins en fonction de la composition des ménages, et donc la mesure des exigences des seuils de pauvreté.
+
+La littérature sur les échelles d'équivalence a une longue histoire, qui commence généralement avec l'étude d'Engle sur la consommation alimentaire des ménages ouvriers belges (1895), la première enquête empirique connue sur la relation entre les modèles de consommation et la composition des ménages. Il existe de nombreuses études importantes [citons Brown & Deaton (1972), Prais & Houthakker (1955)].
+
+L'idée générale est que nous pouvons définir une fonction avec la notation DE1980 :
+
+$$
+m^{h} = m(a^{h})
+$$
+
+Cette fonction exprime les dépenses minimales pour entretenir un ménage, exprimées en équivalent d'un adulte seul. La fonction ne dépend que du vecteur des caractéristiques des ménages $a^{h}$ . Le vecteur des caractéristiques peut être n'importe quel élément observable.
+
+Historiquement, de nombreux travaux empiriques ont été réalisés sur les besoins alimentaires des ménages [citer de nombreux articles anciens d'économie et de sociologie aux États-Unis et en Europe], en distinguant souvent les besoins par sexe et par âge, par étapes annuelles. Une grande partie de cette littérature existe depuis l'article pionnier d'Engle (1895) et jusqu'au système de dépenses linéaires de Stone et à l'échelle d'Amsterdam (1954).
+
+L'hypothèse explicite qui sous-tend les échelles d'équivalence en tant qu'indices est que l'on calcule la demande par le biais de fonctions de coût en fonction de la demande de référence (coût pour un adulte célibataire), c'est-à-dire que l'on calcule la demande par le biais de fonctions de coût :
+
+$$
+c^{h}(u^{h},p,a^h)=m(a^h)c(u^h,p)=x^h
+$$
+
+où $c(u,p)$ est la fonction de coût de référence (par habitant, c'est-à-dire pour un seul adulte). La fonction d'utilité indirecte est définie de la même manière avec l'échelle d'équivalence qui pondère explicitement les quantités :
+
+$$
+u^h=v^h(q^h,a^h)=v(q^h/m(a^h))=v(q^{h*})
+$$
+
+avec $q_i^{h*}=q_i^h/m(a^h)$ où les fonctions de demande par habitant ont la forme suivante :
+
+$$
+q_i^h/m(a^h)=g_i(x^h/m(a^h),p)
+$$
+
+soit, exprimé en part budgétaire:
+
+$$
+w_i^h=\cfrac{p_iq_i^h}{x^h}=\cfrac{p_ig_i(x^h/m(a^h),p)}{x^h/m(a^h)}
+$$
+
+Nous soulignerons qu'elle est fonction de $x^h/m(a^h)$. Cela signifie que si $h$ est un ménage de caractéristiques  $a^h$ et si $k$ est le ménage de référence pour lequel  $m(a^k)=1$ et si $h$ et $k$ ont même part budgétaire, alors on doit avoir:
+
+$$
+\frac{x^h}{m(a^k)}=\frac{x^k}{m(a^k)}=x^k
+$$
+
+c'est-à-dire, $m(a_h)=x^h/x^k$.
+
+La logique de l'échelle d'équivalence est assez simple : une échelle d'équivalence est un vecteur de poids associés à différentes caractéristiques des ménages, parmi lesquelles on trouve généralement les groupes d'âge, l'état matrimonial, le sexe et les diplômes, ainsi que de nombreuses autres caractéristiques pertinentes.
+
+Ces poids sont utilisés comme déflateurs du revenu des ménages ou des dépenses de consommation, ils permettent d'exprimer les modèles en équivalent adulte. Cette affirmation signifie que, si l'échelle d'équivalence pour un ménage de taille $N$ et de revenu $R$ est $m(N)$, alors ce ménage a le même niveau de vie qu'un adulte seul ayant un revenu $R/m(N)$. Cet adulte seul est la référence avec l'échelle d'équivalence égale à 1.
+
+L'idée est d'évaluer les besoins d'un ménage de composition et de caractéristiques données par rapport aux besoins d'un adulte seul. Une mesure plus précise consisterait à mettre en relation les coûts de réalisation des besoins et des niveaux d'utilité donnés. Dans ce cas, l'échelle serait $C(U,N)/C(U,1)$, c'est-à-dire le rapport entre la fonction de coût d'un ménage de taille $N$ et celle d'un adulte célibataire ayant le même niveau d'utilité, $U$. Comme indiqué précédemment, il faut supposer qu'il existe une relation directe entre le comportement et le bien-être, ce que nous faisons sans discussion.
+
+Les économies d'échelle dans la consommation des ménages semblent motivées par la distinction entre consommation personnelle et consommation collective. Évidemment, un bien personnel est consommé par un seul membre du ménage, c'est le cas, entre autres, des vêtements, des médicaments, d'une place de cinéma ou d'une part de gâteau. La consommation collective résulte des services rendus à l'ensemble des membres du ménage par un équipement ou un dispositif : le réfrigérateur, un meuble de rangement, le lave-vaisselle, l'éclairage, la réfrigération ou le chauffage. Certains équipements sont dans une position intermédiaire car ils sont collectifs par essence mais ne peuvent être utilisés que par une seule personne à la fois (par exemple, le fer à repasser, les toilettes), mais nous considérons tous ces cas comme des biens de consommation collective. Considérons un modèle où tous les membres du ménage consomment un bien personnel et un bien collectif.
+
+Nous discutons ici de la théorie des connaissances communes motivant les échelles d'équivalence. Cela peut être simplifié, mais il semble intéressant de rappeler les principaux sujets et calculs conduisant à des échelles d'équivalence de type OCDE.
+
+Peut-être pouvons-nous ici motiver pleinement les simplifications conduisant à la réduction de la composition des ménages par adultes/enfants.
+
+[nous discutons ici des échelles d'équivalence concave et convexe : l'échelle concave est la plus facile à estimer car elle exprime le nombre d'enfants en niveaux, tandis que l'échelle convexe l'exprime en logarithmes, ce qui pose des problèmes d'estimation].
+
+# Le contexte du projet : motivation pour une échelle d'équivalence de type OCDE pour l'Algérie
+
+
+[Ici vous pouvez présenter votre travail à l'ONS et les objectifs de vos investigations. En effet, il s'agit ici de votre travail.]
+
+[Je propose deux sous-sections suivantes]
+
+## contexte général du projet
+
+ici vous exposez le projet plus large de votre thèse et la nécessité de modéliser la consommation des ménages algériens.
+
+## Les données : les enquêtes auprès des ménages algériens
+
+Là encore, c'est à vous de jouer. Vous pouvez présenter les données de l'enquête sur les ménages algériens et les choix effectués pour réaliser l'échelle d'équivalence.
+
+# La méthodologie d'estimation
+
+Nous présentons ici la méthodologie proposée dans l'article de Hourriez & Ollier (1997).
+
+
+La méthodologie proposée est conçue pour estimer une échelle d'équivalence de type OCDE, c'est-à-dire un système de pondération tenant compte de la composition des ménages par âge, plus précisément des adultes et des enfants. Nous rappelons que l'échelle d'équivalence d'Oxford [find ref] est donnée par le triple (1, 0,7, 0,5) où 1 est le poids du premier adulte, le chef de ménage, 0,7 pour les adultes supplémentaires et 0,5 pour les enfants lorsque les adultes sont des personnes d'au moins 15 ans.L'échelle de l'OCDE proposée au tournant du 21e siècle avec un triple de poids (1, 0,5, 0,3). Notons que nous nous intéressons à une échelle d'équivalence moyenne pour l'ensemble de l'Algérie métropolitaine. Ainsi, nous ne prenons pas en compte des groupes spécifiques de la population algérienne car nous nous intéressons avant tout au comportement moyen des ménages algériens.
+
+Cette équivalence est facile à estimer en deux étapes. Une première étape consiste à estimer le ratio de coût relatif des enfants par rapport aux adultes. Ensuite, on définit une correction de la taille du ménage pour régulariser l'estimation finale des coefficients entrant dans l'échelle d'équivalence de type OCDE.
+
+Le modèle peut être estimé à partir de données quantitatives objectives et de données qualitatives subjectives. Les premières sont dérivées des données d'enquête observées en matière de dépenses, de parts budgétaires et de revenus ; les secondes sont généralement une variable catégorielle ordonnée provenant d'une question posée aux ménages interrogés sur leur niveau de vie perçu. Dans le modèle objectif, la variable dépendante est alors la part budgétaire du poste de consommation considéré et dans le modèle subjectif, les catégories de la question sur le niveau de vie.Les estimateurs sont alors l'estimateur standard des MCO pour le modèle objectif et l'estimateur du logit ordonné pour le modèle subjectif.
+
+Dans cette note, nous estimons le modèle objectif sur des données d'enquêtes auprès des ménages algériens. Nous estimons le modèle d'échelle concave car il est plus simple, les dépenses étant exprimées en logarithmes mais le nombre d'adultes et d'enfants en niveaux. L'équation maîtresse estimée est donc la suivante :
+
+$$
+w_i=a+b.ln(X_i)+c.A_i+d.K_i+\Sigma_k\gamma_k.g_k+\epsilon_i
+$$
+
+L'indice $i$ désigne les ménages : $w_i$ est la part du poste de consommation courant $X_i$ est la dépense totale, $A_i$ et $K_i$ respectivement le nombre d'adultes et d'enfants, avec des coûts respectifs $c$ pour les adultes et $d$ pour les enfants, et où $g_k$ sont les caractéristiques socio-économiques des ménages dont les coefficients sont $\gamma_k$, $\epsilon_i$ est le terme résiduel.
+
+L'équation nécessite une sélection minutieuse de deux éléments importants : premièrement, l'âge limite entre les adultes et les enfants et deuxièmement, la catégorie de référence des caractéristiques des ménages qui sont représentées par la constante. L'âge limite pour l'Algérie a été fixé à 18 ans [confirmer] tandis que la catégorie de référence est résumée dans les annexes.
+
+Dans l'échelle d'équivalence convexe, le nombre d'adultes et d'enfants entre sous forme logarithmique. Cela implique une méthode d'estimation plus complexe impliquant une étape de régression censurée afin de prendre en compte la censure inférieure des ménages avec zéro enfant.
+
+L'échelle convexe implique des coûts décroissants pour les personnes supplémentaires et des coûts croissants pour l'échelle concave. Les deux spécifications sont possibles, et leur comparaison permet de mesurer les économies d'échelle de la consommation collective dans les ménages. [ajouter des références et peut-être une remarque pour l'Algérie]
+
+Dans toutes les échelles d'équivalence, l'équation (1) est une étape intermédiaire pour calculer le coût relatif des enfants par rapport aux adultes, c'est-à-dire $rc = d / c$. Le coût relatif est calculé afin de dériver la taille corrigée du ménage, c'est-à-dire :
+
+$$
+N_i = A_i+rc.K_i
+$$
+
+où $N_i$ est la taille du ménage corrigée de l'âge qui diffère de $H_i$ la taille du ménage observée.Cette correction de la taille en fonction de l'âge est une correction statistique permettant des estimations plus précises des paramètres pertinents. [trouver la référence introduisant ceci !].On pourrait comparer les estimations corrigées de l'âge aux estimations directes de l'équation maîtresse (1).Notez également que le coût relatif $rc$ pourrait être obtenu par une recherche sur une grille sur un intervalle avec des pas constants. Ici, nous ne considérons que l'estimation directe dans le modèle en deux étapes.
+
+Dans la deuxième étape, nous estimons l'équation suivante :
+
+$$
+w_i=a+b.ln(X_i)+c.N_i+\Sigma_k\gamma_k.g_k+\epsilon_i
+$$
+
+afin d'obtenir le paramètre d'échelle de l'échelle d'équivalence ajustée :
+
+$$
+A = exp(-c/b)
+$$
+
+Ce paramètre donne l'expression de l'échelle d'équivalence convexe, c'est-à-dire :
+
+$$
+E_i = A^{N_i - 1}
+$$
+
+Remarquez que nous utilisons la taille corrigée en fonction de l'âge comme exposant de l'échelle d'équivalence intermédiaire. Ensuite, nous linéarisons cette expression par régression de cette échelle d'équivalence ajustée sur la taille corrigée, ce qui nous permet de calculer la régression :
+
+$$
+E_i = a + e.N_i 
+$$
+
+Ici, e est le coefficient final dont nous avons besoin pour calculer les poids de l'échelle d'équivalence de type OCDE dont nous avons besoin.
+
+L'échelle d'équivalence finale est alors donnée par l'équation suivante :
+
+$$
+E_i = 1 + e.(A_i - 1) + e.rc.(K_i) 
+$$
+
+Le triplet $(1, e, e.rc)$ constitue les coefficients finaux de l'échelle d'équivalence. Il faut les appliquer comme dans l'équation précédente avec les données observées sans oublier de soustraire un au nombre d'adultes pour éviter le double comptage du chef de ménage dont le coefficient est de 1.
+
+On peut envisager d'estimer différentes échelles d'équivalence pour différents groupes de consommation. Dans ce cas, une échelle moyenne peut être agrégée en calculant la moyenne pondérée des postes individuels pondérés par les parts de budget. Une autre possibilité consiste à estimer les échelles d'équivalence par poste en tant que système, par exemple, comme les systèmes de Rotbarth ou de Barten. Dans ce document, nous n'avons considéré qu'une seule échelle d'équivalence non alimentaire, plus adaptée au contexte actuel des ménages algériens. [Nous pouvons laisser cette question en suspens pour des recherches plus approfondies dans la conclusion].
+ 
+
+# Les résultats
+
+Nous présentons ici les résultats de l'estimation économétrique de l'échelle d'équivalence.# Discussion des résultats
+
+Nous discutons de votre point de vue et du paysage plus large de l'analyse de la consommation algérienne.Peut-être cela pourrait-il être inclus dans la conclusion, mais je pense que cela affaiblirait votre contribution à cette question importante, car cela ouvre de nombreuses perspectives.[Une ligne de recherche très intéressante pour l'Algérie serait d'étudier le coût des enfants dans le contexte d'une transformation et d'une croissance rapides en Algérie.Une autre piste pourrait être d'étudier des groupes spécifiques de la population, selon les besoins].# Conclusion
+
+Ici nous concluons, il faut faire attention car c'est ce qui sera le plus lu, les coefficients pour les adultes / enfants supplémentaires doivent apparaître ici je pense. [vérifier ici si nous proposons les estimations du système, wiz : ]
+
+# Références
+
+Lorsque nous sommes d'accord, nous ajoutons les références dans le texte.# Annexesselon les besoins ici ? nomenclatures, le détail complet des postes de consommation, quelques détails sur l'enquête algérienne sur la santé.
+
+Présenter ici la catégorie de référence pour les équations estimées.

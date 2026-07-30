@@ -1,0 +1,49 @@
+---
+lang: fr
+title: "Test de note de travail"
+author: "Franck"
+date: "2023-09-27"
+output: 
+  word_document:
+    reference_docx: word-styles-reference-01.docx
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+C'est du texte y compris avec accentuation : à plus !
+
+# Ceci est un titre de niveau 1
+
+*ital* ou *ital* **gras** ou **gras**
+
+entourer les indices de tilde : \~ H~2~SO~4~ CO~2~
+
+entourer les exposants de flexes : \^ (caret en anglais) Fe^2+^ x^2^
+
+## Ceci est un titre de niveau 2
+
+Le texte commence ici sous ce titre de niveau 2
+
+Attention ! il faut absolument que reference_docx: ait pour nom word-styles-reference-01.doc
+
+\![A scout ship in deep space](C/bricoleR/__WP_cired/ScoutInDeepSpace.jpg)
+
+### Titre 3
+
+On peut ajouter des notes de bas de page[^1]
+
+[^1]: note de bas de page
+
+#### Titre 4
+
+-   notes à puces : \*, - ou +
+-   puce
+-   puce
+
+Références
+
+[https://www.royfrancis.com/workshop-template-rmd-](https://www.royfrancis.com/workshop-template-rmd-ga/2001/lab_rmdadv.html){.uri}
+
+<https://www.royfrancis.com/workshop-template-rmd-ga/2001/lab_rmdadv.html>
